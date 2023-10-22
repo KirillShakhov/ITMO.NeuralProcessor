@@ -8,6 +8,11 @@ add_executable(test_counter main.cpp)
 target_link_libraries(test_counter SystemC::systemc)
 
 add_executable(test_systemc
-        counter.cpp
-        counter_tb.cpp)
+        src/counter.cpp
+        tests/counter_tb.cpp)
 target_link_libraries(test_systemc SystemC::systemc)
+
+add_executable(test_multiplier
+        src/multiplier.cpp
+        tests/multiplier_tb.cpp)
+target_link_libraries(test_multiplier SystemC::systemc)
