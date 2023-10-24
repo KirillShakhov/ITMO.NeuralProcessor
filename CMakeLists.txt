@@ -61,3 +61,8 @@ add_executable(test_bus
 add_executable(test_local_memory
         src/local_memory.h
         tests/local_memory_tb.cpp)
+
+add_executable(test_pe_core
+        src/pe_core.h
+        src/local_memory.h
+        tests/pe_core_tb.cpp)

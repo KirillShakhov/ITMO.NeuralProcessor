@@ -3,10 +3,10 @@
 #include "../src/bus_channel.cpp"
 
 SC_MODULE(Module_A) {
-    sc_port<bus_channel> out_port;
+    sc_port<bus_channel<32,32>> out_port;
 
     void process() {
-        out_port->write(42);
+        out_port->write(0, 42);
     }
 
     SC_CTOR(Module_A) {
@@ -15,7 +15,7 @@ SC_MODULE(Module_A) {
 };
 
 SC_MODULE(Module_B) {
-    sc_port<bus_channel> in_port;
+    sc_port<bus_channel<32,32>> in_port;
     sc_out<int> data_out;
 
 
@@ -33,7 +33,7 @@ SC_MODULE(Module_B) {
 int sc_main(int argc, char* argv[]) {
     Module_A mod_a("Module_A");
     Module_B mod_b("Module_B");
-    bus_channel channel;
+    bus_channel<32,32> channel;
 
     sc_signal<int> data;
 
