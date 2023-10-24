@@ -41,3 +41,7 @@ add_executable(test_multiplier_array
 add_executable(test_adder_mmm
         src/adder_mmm.h
         tests/adder_mmm_tb.cpp)
+
+add_executable(test_sigmoid
+        src/sigmoid.h
+        tests/sigmoid_tb.cpp)
