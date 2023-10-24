@@ -8,7 +8,7 @@ int sc_main (int argc, char* argv[]) {
     sc_vector<sc_signal<float>>  in2{"in2", N_PORTS};
     sc_vector<sc_signal<float>>  out1{"out1", N_PORTS};
 
-    MultiplierArray multiplierArray("MultiplierArray");
+    MultiplierArray<N_PORTS> multiplierArray("MultiplierArray");
     multiplierArray.input1(in1);
     multiplierArray.input2(in2);
     multiplierArray.output(out1);

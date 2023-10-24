@@ -1,10 +1,10 @@
 #include <systemc.h>
 
+template<int N_PORTS>
 SC_MODULE(MultiplierArray) {
-    static const int N_PORTS = 2;
     sc_vector<sc_in<float>>  input1{"input1", N_PORTS};
     sc_vector<sc_in<float>>  input2{"input2", N_PORTS};
-    sc_vector<sc_out<float>>  output{"output", N_PORTS};
+    sc_vector<sc_out<float>>  output{"output",N_PORTS};
 
     void adder() {
         for (int i = 0; i < N_PORTS; ++i) {
