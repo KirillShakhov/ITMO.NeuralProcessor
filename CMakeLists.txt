@@ -9,17 +9,17 @@ link_libraries(SystemC::systemc)
 add_executable(test_counter main.cpp)
 
 add_executable(test_systemc
-        src/counter.cpp
+        src/counter.h
         tests/counter_tb.cpp)
 
 add_executable(test_multiplier
-        src/floating_point_multiplier.cpp
+        src/floating_point_multiplier.h
         tests/multiplier_tb.cpp)
 
 add_executable(test_adder
-        src/floating_point_adder.cpp
+        src/floating_point_adder.h
         tests/adder_tb.cpp)
 
 add_executable(test_summator
-        src/summator.cpp
+        src/summator.h
         tests/summator_tb.cpp)

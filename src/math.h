@@ -1,5 +1,5 @@
 #include <systemc.h>
-#include "../src/floating_point_multiplier.cpp"
+#include "../src/floating_point_multiplier.h"
 
 SC_MODULE(MathModule) {
     sc_in<float> input1;

@@ -1,5 +1,5 @@
 #include <systemc.h>
-#include "./floating_point_adder.cpp"
+#include "./floating_point_adder.h"
 
 SC_MODULE(SumModule) {
     sc_in_clk     clock;
@@ -35,9 +35,5 @@ SC_MODULE(SumModule) {
         SC_METHOD(sum);
         sensitive << reset;
         sensitive << clock.pos();  // Реагируем только на положительный фронт тактового сигнала
-    }
-
-    ~SumModule() {
-        delete adder1;  // Не забудьте удалить выделенную память!
     }
 };

@@ -1,6 +1,6 @@
 #include <systemc.h>
-#include "../src/summator.cpp"
-#include "../src/clk.cpp"
+#include "../src/summator.h"
+#include "../src/clk.h"
 
 int sc_main (int argc, char* argv[]) {
     sc_signal<bool>   clock;

@@ -1,5 +1,5 @@
 #include <systemc.h>
-#include "../src/floating_point_multiplier.cpp"
+#include "../src/floating_point_multiplier.h"
 
 int sc_main(int argc, char* argv[]) {
     sc_signal<float> input1;
