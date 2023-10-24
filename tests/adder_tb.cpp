@@ -16,7 +16,7 @@ int sc_main(int argc, char* argv[]) {
 
     sc_trace(tf, input1, "input1");
     sc_trace(tf, input2, "input2");
-    sc_trace(tf, result, "result");
+    sc_trace(tf, result, "output");
 
     input1 = 2.7; // Set input values
     input2 = 6.5;
