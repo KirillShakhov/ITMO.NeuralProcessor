@@ -37,3 +37,7 @@ add_executable(test_adder_array
 add_executable(test_multiplier_array
         src/multiplier_array.h
         tests/multiplier_array_tb.cpp)
+
+add_executable(test_adder_mmm
+        src/adder_mmm.h
+        tests/adder_mmm_tb.cpp)
