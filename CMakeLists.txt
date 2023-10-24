@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(test_systemc)
+project(ITMO.NeuralProcessor)
 
 find_package(SystemCLanguage CONFIG REQUIRED)
 set (CMAKE_CXX_STANDARD ${SystemC_CXX_STANDARD})
@@ -19,3 +19,7 @@ add_executable(test_multiplier
 add_executable(test_adder
         src/floating_point_adder.cpp
         tests/adder_tb.cpp)
+
+add_executable(test_summator
+        src/summator.cpp
+        tests/summator_tb.cpp)
