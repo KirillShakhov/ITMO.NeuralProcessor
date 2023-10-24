@@ -9,6 +9,7 @@ SC_MODULE(NeuralMath) {
     sc_in_clk clock;
     sc_in<bool> reset;
     sc_in<bool> enable;
+    sc_out<bool> busy;
     sc_vector<sc_in<float>> inputs{"inputs", N_PORTS};
     sc_vector<sc_in<float>> weights{"weights", N_PORTS};
     sc_out<float> output;
@@ -26,35 +27,36 @@ SC_MODULE(NeuralMath) {
 
     sc_signal<float> sigmoidInput;
     sc_signal<float> sigmoidOutput;
+//    sc_signal<bool> busy;
+
+    sc_uint<2> count;
 
     void update_output() {
         if (reset.read()) {  // Асинхронный сброс
             output.write(0);
+            busy.write(false);
         } else if (clock.posedge()) { // Если положительный фронт
-            if (!enable){
-                for (int i = 0; i < N_PORTS; ++i) {
-                    multiplierArrayInput1[i].write(0);
-                    multiplierArrayInput2[i].write(0);
-                }
-            }
-            else{
+            if (enable){
+                busy.write(true);
+                count = 2;
+                output.write(0);
                 for (int i = 0; i < N_PORTS; ++i) {
                     multiplierArrayInput1[i].write(inputs[i].read());
                     multiplierArrayInput2[i].write(weights[i].read());
                 }
+                return;
             }
             for (int i = 0; i < N_PORTS; ++i) {
-                cout << "multiplierArray.output" << i << ":" << multiplierArray.output[i] << endl;
+                multiplierArrayInput1[i].write(0);
+                multiplierArrayInput2[i].write(0);
             }
-
-            for (int i = 0; i < N_PORTS; ++i) {
-                cout << "adderMmm:output" << i << ":" << adderMmm.output << endl;
-            }
-
-
             sigmoidInput.write(adderBufferOutput.read());
-            output.write(sigmoidOutput.read());
+            if (count <= 0) {
+                busy.write(false);  // Not processing, so not busy
+                output.write(sigmoidOutput.read());
+            }
         }
+        count--;
     }
 
     SC_CTOR(NeuralMath) {

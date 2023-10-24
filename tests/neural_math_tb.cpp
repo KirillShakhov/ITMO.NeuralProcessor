@@ -11,11 +11,13 @@ int sc_main (int argc, char* argv[]) {
     sc_signal<bool>   clock;
     sc_signal<bool>   reset;
     sc_signal<bool>   enable;
+    sc_signal<bool>   busy;
     ClockGenerator clock_gen("clock_gen");
     clock_gen.clk(clock);
 
     NeuralMath<N_PORTS> neuralMath("NeuralMath");
     neuralMath.clock(clock);
+    neuralMath.busy(busy);
     neuralMath.reset(reset);
     neuralMath.enable(enable);
     neuralMath.inputs(inputs);
@@ -31,6 +33,7 @@ int sc_main (int argc, char* argv[]) {
     sc_trace(wf, clock, "clock");
     sc_trace(wf, reset, "reset");
     sc_trace(wf, enable, "enable");
+    sc_trace(wf, busy, "busy");
 
     reset = 1;
     sc_start(10, SC_NS);
@@ -59,7 +62,7 @@ int sc_main (int argc, char* argv[]) {
     weights[3].write(-17.452001343590457f);
     sc_start(10, SC_NS);
     enable = 0;
-    sc_start(50, SC_NS);
+    sc_start(150, SC_NS);
 
 
     sc_close_vcd_trace_file(wf);
