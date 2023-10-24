@@ -56,5 +56,8 @@ add_executable(test_memory
 
 add_executable(test_bus
         src/bus_channel.cpp
-        src/bus_interface.h
         tests/bus_tb.cpp)
+
+add_executable(test_local_memory
+        src/local_memory.h
+        tests/local_memory_tb.cpp)

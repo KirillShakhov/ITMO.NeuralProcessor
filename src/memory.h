@@ -11,7 +11,7 @@ SC_MODULE(Memory) {
     sc_out<sc_uint<DATA_BITS>> data_out;
 
     // Локальная память
-    sc_uint<DATA_BITS> mem[2^ADDR_BITS];
+    sc_uint<DATA_BITS> mem[(1 << ADDR_BITS)];
 
     void proc(){
         if (!enable.read()) return;
