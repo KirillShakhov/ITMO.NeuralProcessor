@@ -53,3 +53,8 @@ add_executable(test_neural_math
 add_executable(test_memory
         src/memory.h
         tests/memory_tb.cpp)
+
+add_executable(test_bus
+        src/bus_channel.cpp
+        src/bus_interface.h
+        tests/bus_tb.cpp)
