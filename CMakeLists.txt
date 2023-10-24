@@ -49,3 +49,7 @@ add_executable(test_sigmoid
 add_executable(test_neural_math
         src/neural_math.h
         tests/neural_math_tb.cpp)
+
+add_executable(test_memory
+        src/memory.h
+        tests/memory_tb.cpp)
