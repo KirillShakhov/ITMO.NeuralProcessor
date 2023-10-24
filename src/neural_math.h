@@ -27,7 +27,6 @@ SC_MODULE(NeuralMath) {
 
     sc_signal<float> sigmoidInput;
     sc_signal<float> sigmoidOutput;
-//    sc_signal<bool> busy;
 
     sc_uint<2> count;
 
