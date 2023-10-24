@@ -21,5 +21,5 @@ add_executable(test_adder
         tests/adder_tb.cpp)
 
 add_executable(test_summator
-        src/summator.h
-        tests/summator_tb.cpp)
+        src/adder_buffer.h
+        tests/adder_buffer_tb.cpp)
