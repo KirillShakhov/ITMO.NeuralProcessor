@@ -15,8 +15,8 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool>   local_memory_rd;
     sc_signal<bool>   local_memory_wr;
     sc_signal<sc_uint<ADDR_BITS>>  local_memory_addr;
-    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_in{"data_in", POCKET_SIZE};
-    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_data_out{"data_out", POCKET_SIZE};
+    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_in{"local_memory_data_in", POCKET_SIZE};
+    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_out{"local_memory_data_out", POCKET_SIZE};
     // Pe Core Signals
     sc_signal<bool>   pe_core_rst;
     sc_signal<bool>   pe_core_enable;
@@ -24,16 +24,6 @@ int sc_main(int argc, char* argv[]) {
 
     ClockGenerator clock_gen("clock_gen");
     clock_gen.clk(clk);
-
-
-    LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE> memory("LocalMemory");
-    memory.clk(clk);
-    memory.enable(local_memory_enable);
-    memory.rd(local_memory_rd);
-    memory.wr(local_memory_wr);
-    memory.address(local_memory_addr);
-    memory.data_in(local_memory_data_in);
-    memory.data_out(local_memory_data_data_out);
 
     PeCore<ADDR_BITS,DATA_BITS,POCKET_SIZE> pe_core("PeCore");
     pe_core.clk_i(clk);
@@ -44,8 +34,17 @@ int sc_main(int argc, char* argv[]) {
     pe_core.local_memory_wr(local_memory_wr);
     pe_core.local_memory_rd(local_memory_rd);
     pe_core.local_memory_enable(local_memory_enable);
-    pe_core.local_memory_data_bi(local_memory_data_data_out);
+    pe_core.local_memory_data_bi(local_memory_data_out);
     pe_core.local_memory_data_bo(local_memory_data_in);
+
+    LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE> memory("LocalMemory");
+    memory.clk(clk);
+    memory.enable(local_memory_enable);
+    memory.rd(local_memory_rd);
+    memory.wr(local_memory_wr);
+    memory.address(local_memory_addr);
+    memory.data_in(local_memory_data_in);
+    memory.data_out(local_memory_data_out);
 
     sc_trace_file* tf = sc_create_vcd_trace_file("pe_core_tb");
     tf->set_time_unit(1, SC_NS);
@@ -53,6 +52,11 @@ int sc_main(int argc, char* argv[]) {
     sc_trace(tf, pe_core_enable, "pe_core_enable");
     sc_trace(tf, pe_core_busy, "pe_core_busy");
     sc_trace(tf, pe_core_rst, "pe_core_rst");
+    sc_trace(tf, local_memory_enable, "local_memory_enable");
+    sc_trace(tf, local_memory_wr, "local_memory_wr");
+    sc_trace(tf, local_memory_rd, "local_memory_rd");
+    sc_trace(tf, local_memory_addr, "local_memory_addr");
+    sc_trace(tf, local_memory_data_out[0], "local_memory_data_data_out0");
 
     local_memory_enable = true;
     local_memory_wr = true;
@@ -87,8 +91,6 @@ int sc_main(int argc, char* argv[]) {
     pe_core_enable = true;
     sc_start(10, SC_NS);
     pe_core_rst = false;
-    sc_start(10, SC_NS);
-
     sc_start(100, SC_NS);
     sc_close_vcd_trace_file(tf);
     return 0;
