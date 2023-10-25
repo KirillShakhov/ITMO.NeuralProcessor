@@ -67,7 +67,7 @@ SC_MODULE(NeuralProcessor) {
             local_memories[i]->data_in(*local_memory_data_in[i]);
             local_memories[i]->data_out(*local_memory_data_out[i]);
 
-
+            cores[i]->init(i);
             cores[i]->clk_i(clk_i);
             cores[i]->rst_i(pe_core_rst[i]);
             cores[i]->enable_i(pe_core_enable[i]);

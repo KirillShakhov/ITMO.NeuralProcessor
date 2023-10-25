@@ -63,6 +63,11 @@ SC_MODULE(PeCore) {
         sensitive << clk_i.pos();
     }
 
+    int index_core;
+    void init(int core_index) {
+        index_core = core_index;
+    }
+
     // Core processing method
     void core_process() {
         if (rst_i) {
