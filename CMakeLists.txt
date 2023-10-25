@@ -66,3 +66,7 @@ add_executable(test_pe_core
         src/pe_core.h
         src/local_memory.h
         tests/pe_core_tb.cpp)
+
+add_executable(test_neural_processor
+        src/neural_processor.h
+        tests/neural_processor_tb.cpp)
