@@ -5,11 +5,11 @@ int sc_main(int argc, char* argv[]) {
     const int ADDR_BITS = 32;
     sc_signal<bool> bus_rd{"bus_rd"};
     sc_signal<bool, SC_MANY_WRITERS> bus_wr{"bus_wr"};
-    sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr"};
+    sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr", 0};
     sc_signal<float, SC_MANY_WRITERS> bus_data_in{"bus_data_in"};
     sc_signal<float, SC_MANY_WRITERS> bus_data_out{"bus_data_out"};
 
-    sc_clock clk("ck1", 10, SC_NS);
+    sc_clock clk("clk", 10, SC_NS, 0.5, 5, SC_NS, false);
     IoModule<ADDR_BITS> ioModule("IoModule");
     ioModule.clk_i(clk);
     ioModule.bus_addr(bus_addr);

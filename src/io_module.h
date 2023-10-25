@@ -18,6 +18,8 @@ SC_MODULE(IoModule) {
     std::vector<BusData> data_vector;
     size_t current_index = 0;
     void process() {
+        cout << "Process triggered at " << sc_time_stamp() << endl; // Добавьте эту строку
+
         if (current_index < data_vector.size()) {
             BusData& current_data = data_vector[current_index];
             cout << "current_index" << current_index << endl;
@@ -28,7 +30,10 @@ SC_MODULE(IoModule) {
     }
 
     SC_CTOR(IoModule) {
-        data_vector.push_back(BusData{0, 0});
+        SC_METHOD(process);
+        sensitive << clk_i.pos();
+
+        data_vector.push_back(BusData{1, 1});
 
         data_vector.push_back(BusData{0, 0.9990631251789995});
         data_vector.push_back(BusData{1, 0.7550705154311167});
@@ -65,9 +70,5 @@ SC_MODULE(IoModule) {
         data_vector.push_back(BusData{29, 0.269989261270187});
         data_vector.push_back(BusData{30, 0.9993619882449931});
         data_vector.push_back(BusData{31, -0.24792302708954958});
-
-
-        SC_METHOD(process);
-        sensitive << clk_i.pos();
     }
 };
