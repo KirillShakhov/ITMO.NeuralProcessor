@@ -33,6 +33,10 @@ SC_MODULE(NeuralMath) {
     void update_output() {
         if (reset.read()) {  // Асинхронный сброс
             output.write(0);
+            for (int i = 0; i < N_PORTS; ++i) {
+                multiplierArrayInput1[i].write(0);
+                multiplierArrayInput2[i].write(0);
+            }
             busy.write(false);
         } else if (clock.posedge()) { // Если положительный фронт
             if (enable){
@@ -49,7 +53,10 @@ SC_MODULE(NeuralMath) {
                 multiplierArrayInput1[i].write(0);
                 multiplierArrayInput2[i].write(0);
             }
+            cout << "adderBufferOutput: " << adderBufferOutput.read() << endl;
+
             sigmoidInput.write(adderBufferOutput.read());
+            cout << "math_result: " << sigmoidOutput.read() << endl;
             if (count <= 0) {
                 busy.write(false);  // Not processing, so not busy
                 output.write(sigmoidOutput.read());
@@ -81,6 +88,6 @@ SC_MODULE(NeuralMath) {
             sensitive << inputs[i];
         }
         sensitive << reset;
-        sensitive << clock.pos();  // Реагируем только на положительный фронт тактового сигнала
+        sensitive << clock.pos();
     }
 };

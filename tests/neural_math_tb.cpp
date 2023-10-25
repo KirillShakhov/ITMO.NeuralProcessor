@@ -58,14 +58,15 @@ int sc_main (int argc, char* argv[]) {
     weights[1].write(45.32539856128967f);
     sc_start(10, SC_NS);
 
-    weights[0].write(6.072379717196129f);
-    weights[1].write(-17.452001343590457f);
     inputs[0].write(0.9259701252780933f);
     inputs[1].write(0.9993096918528903f);
+    weights[0].write(6.072379717196129f);
+    weights[1].write(-17.452001343590457f);
     sc_start(10, SC_NS);
     enable = 0;
     sc_start(150, SC_NS);
 
+    cout << "res" << output << endl;
 
     sc_close_vcd_trace_file(wf);
     return 0;

@@ -15,8 +15,8 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool>   local_memory_rd;
     sc_signal<bool>   local_memory_wr;
     sc_signal<sc_uint<ADDR_BITS>>  local_memory_addr;
-    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_in{"local_memory_data_in", POCKET_SIZE};
-    sc_vector<sc_signal<sc_uint<DATA_BITS>>>  local_memory_data_out{"local_memory_data_out", POCKET_SIZE};
+    sc_vector<sc_signal<float>>  local_memory_data_in{"local_memory_data_in", POCKET_SIZE};
+    sc_vector<sc_signal<float>>  local_memory_data_out{"local_memory_data_out", POCKET_SIZE};
     // Pe Core Signals
     sc_signal<bool>   pe_core_rst;
     sc_signal<bool>   pe_core_enable;
@@ -75,7 +75,7 @@ int sc_main(int argc, char* argv[]) {
     local_memory_data_in[6] = 0.9992826834871;
     local_memory_data_in[7] = -9.79067155131993;
     sc_start(10, SC_NS);
-    local_memory_addr = 9;
+    local_memory_addr = 10;
     local_memory_data_in[0] = 0.9991566901389833;
     local_memory_data_in[1] = 6.262679709682974;
     local_memory_data_in[2] = 0.9999998737712528;
@@ -86,12 +86,13 @@ int sc_main(int argc, char* argv[]) {
     local_memory_data_in[7] = -17.452001343590457;
     sc_start(10, SC_NS);
     local_memory_enable = false;
+    local_memory_addr = 0;
     sc_start(10, SC_NS);
     pe_core_rst = true;
     pe_core_enable = true;
     sc_start(10, SC_NS);
     pe_core_rst = false;
-    sc_start(100, SC_NS);
+    sc_start(400, SC_NS);
     sc_close_vcd_trace_file(tf);
     return 0;
 }
