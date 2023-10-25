@@ -7,8 +7,8 @@ SC_MODULE(IoModule) {
     sc_out<bool> bus_rd;
     sc_out<bool> bus_wr;
     sc_out<sc_uint<ADDR_BITS>> bus_addr;
-    sc_out<float> bus_data_in{"bus_data_in"};
-    sc_in<float> bus_data_out{"bus_data_out"};
+    sc_out<float> bus_data_in;
+    sc_in<float> bus_data_out;
 
     struct BusData {
         sc_uint<ADDR_BITS> addr;
@@ -32,6 +32,25 @@ SC_MODULE(IoModule) {
     SC_CTOR(IoModule) {
         SC_METHOD(process);
         sensitive << clk_i.pos();
+
+        /*
+        // Адрес для записи результатов
+        data_vector.push_back(BusData{0, 8});
+        // Размерность входных значений
+        data_vector.push_back(BusData{0, 49});
+        // Входные данные []
+        data_vector.push_back(BusData{0, 1});
+        data_vector.push_back(BusData{0, 0});
+        // ...
+        data_vector.push_back(BusData{0, 0});
+        // Количество слоев
+        data_vector.push_back(BusData{0, 2});
+        // Количество весов в каждом слое []
+        data_vector.push_back(BusData{0, 16});
+        data_vector.push_back(BusData{0, 8});
+        // Веса [][]
+        */
+        data_vector.push_back(BusData{0x11, 999});
 
         data_vector.push_back(BusData{0, 0.9990631251789995});
         data_vector.push_back(BusData{1, 0.7550705154311167});
@@ -69,7 +88,7 @@ SC_MODULE(IoModule) {
         data_vector.push_back(BusData{30, 0.9993619882449931});
         data_vector.push_back(BusData{31, -0.24792302708954958});
 
-        for (int i = 0; i < data_vector.size(); ++i) {
+        for (int i = 1; i < data_vector.size(); ++i) {
             data_vector[i].addr = data_vector[i].addr + 0x8000;
         }
     }

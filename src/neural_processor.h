@@ -3,6 +3,7 @@
 #include "shared_memory.h"
 #include "local_memory.h"
 #include "io_module.h"
+#include "bus_multiplexer.h"
 
 template<int ADDR_BITS, int DATA_BITS, int PE_CORES, int POCKET_SIZE>
 SC_MODULE(NeuralProcessor) {
@@ -28,9 +29,26 @@ SC_MODULE(NeuralProcessor) {
     sc_signal<float, SC_MANY_WRITERS> bus_data_in{"bus_data_in"};
     sc_signal<float, SC_MANY_WRITERS> bus_data_out{"bus_data_out"};
 
-    IoModule<ADDR_BITS> ioModule{"IoModule"};
+    sc_signal<bool> io_bus_rd{"io_bus_rd"};
+    sc_signal<bool> io_bus_wr{"io_bus_wr"};
+    sc_signal<sc_uint<ADDR_BITS>> io_bus_addr{"io_bus_addr"};
+    sc_signal<float> io_bus_data_in{"io_bus_data_in"};
 
+    sc_signal<bool> cu_bus_rd{"cu_bus_rd"};
+    sc_signal<bool> cu_bus_wr{"cu_bus_wr"};
+    sc_signal<sc_uint<ADDR_BITS>> cu_bus_addr{"cu_bus_addr"};
+    sc_signal<float> cu_bus_data_in{"cu_bus_data_in"};
+
+    IoModule<ADDR_BITS> ioModule{"IoModule"};
     SharedMemory<ADDR_BITS, DATA_BITS, 0x8000> sharedMemory{"SharedMemory"};
+    BusMultiplexer<ADDR_BITS, 0x10> busMultiplexer{"busMultiplexer"};
+
+    void process(){
+        if (bus_addr.read() == 0x0){
+            cout << "Start" << endl;
+//            bus_addr.write(10);
+        }
+    }
 
     SC_CTOR(NeuralProcessor) {
         for (int i = 0; i < PE_CORES; ++i) {
@@ -80,11 +98,27 @@ SC_MODULE(NeuralProcessor) {
         }
 
         ioModule.clk_i(clk_i);
-        ioModule.bus_addr(bus_addr);
-        ioModule.bus_rd(bus_rd);
-        ioModule.bus_wr(bus_wr);
-        ioModule.bus_data_in(bus_data_in);
+        ioModule.bus_addr(io_bus_addr);
+        ioModule.bus_rd(io_bus_rd);
+        ioModule.bus_wr(io_bus_wr);
+        ioModule.bus_data_in(io_bus_data_in);
         ioModule.bus_data_out(bus_data_out);
+
+        busMultiplexer.bus_addr(bus_addr);
+        busMultiplexer.bus_rd(bus_rd);
+        busMultiplexer.bus_wr(bus_wr);
+        busMultiplexer.bus_data_in(bus_data_in);
+        busMultiplexer.bus_data_out(bus_data_out);
+
+        busMultiplexer.module1_addr(io_bus_addr);
+        busMultiplexer.module1_rd(io_bus_rd);
+        busMultiplexer.module1_wr(io_bus_wr);
+        busMultiplexer.module1_data_in(io_bus_data_in);
+
+        busMultiplexer.module2_addr(cu_bus_addr);
+        busMultiplexer.module2_rd(cu_bus_rd);
+        busMultiplexer.module2_wr(cu_bus_wr);
+        busMultiplexer.module2_data_in(cu_bus_data_in);
 
         sharedMemory.clk_i(clk_i);
         sharedMemory.bus_addr(bus_addr);
@@ -93,7 +127,7 @@ SC_MODULE(NeuralProcessor) {
         sharedMemory.bus_data_in(bus_data_in);
         sharedMemory.bus_data_out(bus_data_out);
 
-//        SC_METHOD(process);
+        SC_METHOD(process);
         sensitive << clk_i.pos();
     }
 };

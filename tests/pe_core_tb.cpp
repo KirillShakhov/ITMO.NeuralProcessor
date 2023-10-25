@@ -128,6 +128,18 @@ int sc_main(int argc, char* argv[]) {
     pe_core_rst = false;
     sc_start(400, SC_NS);
 
+    //
+//    49*15=735
+//    735/3=245
+//    245/5=49
+
+//    15*15=225
+//    225/3=75
+//    75/5=15
+
+//    15*3=45
+//    45/5=9
+
     // Read Results
     local_memory_enable = true;
     local_memory_wr = false;
