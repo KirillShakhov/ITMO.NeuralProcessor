@@ -1,5 +1,6 @@
 #include <systemc.h>
 #include "pe_core.h"
+#include "shared_memory.h"
 #include "local_memory.h"
 #include "io_module.h"
 
@@ -28,6 +29,8 @@ SC_MODULE(NeuralProcessor) {
     sc_signal<float, SC_MANY_WRITERS> bus_data_out{"bus_data_out"};
 
     IoModule<ADDR_BITS> ioModule{"IoModule"};
+
+    SharedMemory<ADDR_BITS, DATA_BITS, 0x8000> sharedMemory{"SharedMemory"};
 
     SC_CTOR(NeuralProcessor) {
         for (int i = 0; i < PE_CORES; ++i) {
@@ -82,6 +85,13 @@ SC_MODULE(NeuralProcessor) {
         ioModule.bus_wr(bus_wr);
         ioModule.bus_data_in(bus_data_in);
         ioModule.bus_data_out(bus_data_out);
+
+        sharedMemory.clk_i(clk_i);
+        sharedMemory.bus_addr(bus_addr);
+        sharedMemory.bus_rd(bus_rd);
+        sharedMemory.bus_wr(bus_wr);
+        sharedMemory.bus_data_in(bus_data_in);
+        sharedMemory.bus_data_out(bus_data_out);
 
 //        SC_METHOD(process);
         sensitive << clk_i.pos();

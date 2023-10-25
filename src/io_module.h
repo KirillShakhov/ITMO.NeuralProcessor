@@ -24,6 +24,7 @@ SC_MODULE(IoModule) {
             BusData& current_data = data_vector[current_index];
             bus_addr.write(current_data.addr);
             bus_data_in.write(current_data.data);
+            bus_wr.write(true);
             current_index++;
         }
     }
