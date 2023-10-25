@@ -7,7 +7,8 @@ SC_MODULE(NeuralProcessor) {
     sc_in<bool> clk_i;
 
     void process() {
-
+        bus_wr = true;
+        bus_addr = 100;
     }
 
     std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> cores;
@@ -24,11 +25,11 @@ SC_MODULE(NeuralProcessor) {
     std::vector<sc_vector<sc_signal<float>>*> local_memory_data_in;
     std::vector<sc_vector<sc_signal<float>>*> local_memory_data_out;
 
-    sc_vector<sc_signal<bool>> bus_rd{"bus_rd", PE_CORES};
-    sc_vector<sc_signal<bool>> bus_wr{"bus_wr", PE_CORES};
-    sc_vector<sc_signal<sc_uint<ADDR_BITS>>> bus_addr{"bus_addr", PE_CORES};
-    std::vector<sc_vector<sc_signal<float>>*> bus_data_in;
-    std::vector<sc_vector<sc_signal<float>>*> bus_data_out;
+    sc_signal<bool, SC_MANY_WRITERS> bus_rd{"bus_rd", PE_CORES};
+    sc_signal<bool, SC_MANY_WRITERS> bus_wr{"bus_wr", PE_CORES};
+    sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr", PE_CORES};
+    sc_vector<sc_signal<float, SC_MANY_WRITERS>> bus_data_in{"bus_data_in",POCKET_SIZE};
+    sc_vector<sc_signal<float, SC_MANY_WRITERS>> bus_data_out{"bus_data_out",POCKET_SIZE};
 
     SC_CTOR(NeuralProcessor) {
         for (int i = 0; i < PE_CORES; ++i) {
@@ -40,16 +41,6 @@ SC_MODULE(NeuralProcessor) {
             std::string in_name = "local_memory_data_in_" + std::to_string(i+1);
             local_memory_data_in.push_back(new sc_vector<sc_signal<float>>(
                     in_name.c_str(),
-                    POCKET_SIZE
-            ));
-            std::string in_bus_name = "bus_data_in_" + std::to_string(i+1);
-            bus_data_in.push_back(new sc_vector<sc_signal<float>>(
-                    in_bus_name.c_str(),
-                    POCKET_SIZE
-            ));
-            std::string out_bus_name = "bus_data_out_" + std::to_string(i+1);
-            bus_data_out.push_back(new sc_vector<sc_signal<float>>(
-                    out_bus_name.c_str(),
                     POCKET_SIZE
             ));
         }
@@ -80,17 +71,15 @@ SC_MODULE(NeuralProcessor) {
             cores[i]->local_memory_data_bi(*local_memory_data_out[i]);
             cores[i]->local_memory_data_bo(*local_memory_data_in[i]);
             // Bus
-            cores[i]->bus_wr(bus_wr[i]);
-            cores[i]->bus_rd(bus_rd[i]);
-            cores[i]->bus_addr(bus_addr[i]);
-            cores[i]->bus_data_in(*bus_data_in[i]);
-            cores[i]->bus_data_out(*bus_data_out[i]);
+            cores[i]->bus_wr(bus_wr);
+            cores[i]->bus_rd(bus_rd);
+            cores[i]->bus_addr(bus_addr);
+            cores[i]->bus_data_in(bus_data_in);
+            cores[i]->bus_data_out(bus_data_out);
         }
-
 
 
         SC_METHOD(process);
         sensitive << clk_i.pos();
     }
-
 };
