@@ -41,7 +41,7 @@ SC_MODULE(NeuralMath) {
         } else if (clock.posedge()) { // Если положительный фронт
             if (enable){
                 busy.write(true);
-                count = 2;
+                count = 3;
                 output.write(0);
                 for (int i = 0; i < N_PORTS; ++i) {
                     multiplierArrayInput1[i].write(inputs[i].read());
