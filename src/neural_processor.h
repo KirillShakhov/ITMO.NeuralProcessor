@@ -1,15 +1,11 @@
 #include <systemc.h>
 #include "pe_core.h"
 #include "local_memory.h"
+#include "io_module.h"
 
 template<int ADDR_BITS, int DATA_BITS, int PE_CORES, int POCKET_SIZE>
 SC_MODULE(NeuralProcessor) {
     sc_in<bool> clk_i;
-
-    void process() {
-        bus_wr = true;
-        bus_addr = 100;
-    }
 
     std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> cores;
     std::vector<LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> local_memories;
@@ -30,6 +26,8 @@ SC_MODULE(NeuralProcessor) {
     sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr"};
     sc_signal<float, SC_MANY_WRITERS> bus_data_in{"bus_data_in"};
     sc_signal<float, SC_MANY_WRITERS> bus_data_out{"bus_data_out"};
+
+    IoModule<ADDR_BITS> ioModule{"IoModule"};
 
     SC_CTOR(NeuralProcessor) {
         for (int i = 0; i < PE_CORES; ++i) {
@@ -78,8 +76,14 @@ SC_MODULE(NeuralProcessor) {
             cores[i]->bus_data_out(bus_data_out);
         }
 
+        ioModule.clk_i(clk_i);
+        ioModule.bus_addr(bus_addr);
+        ioModule.bus_rd(bus_rd);
+        ioModule.bus_wr(bus_wr);
+        ioModule.bus_data_in(bus_data_in);
+        ioModule.bus_data_out(bus_data_out);
 
-        SC_METHOD(process);
+//        SC_METHOD(process);
         sensitive << clk_i.pos();
     }
 };

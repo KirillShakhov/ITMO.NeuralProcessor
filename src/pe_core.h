@@ -63,18 +63,22 @@ SC_MODULE(PeCore) {
         sensitive << clk_i.pos();
     }
 
-    int index_core;
-    void init(int core_index) {
+    sc_uint<4> index_core;
+    void init(sc_uint<4> core_index) {
         index_core = core_index;
     }
 
     // Core processing method
     void core_process() {
+        if (bus_addr.read() == index_core) {
+            cout << "Im live " <<  index_core << endl;
+            cout << "Im live addr " <<  bus_addr.read() << endl;
+        }
+
         if (rst_i) {
             reset_core();
             return;
         }
-
         if (enable_i) {
             switch (stage) {
                 case ProcessingStage::IDLE:

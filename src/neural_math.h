@@ -64,7 +64,6 @@ SC_MODULE(NeuralMath) {
             sigmoidInput.write(adderBufferOutput.read());
             if (count <= 0) {
                 busy.write(false);  // Not processing, so not busy
-                cout << sigmoidOutput.read() << endl;
                 output.write(sigmoidOutput.read());
             }
         }
