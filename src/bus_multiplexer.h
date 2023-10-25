@@ -3,12 +3,14 @@
 template<int ADDR_BITS, int ADDR>
 SC_MODULE(BusMultiplexer) {
     // Входные порты для модуля 1
+    sc_out<bool> module1_enable;
     sc_in<bool> module1_rd;
     sc_in<bool> module1_wr;
     sc_in<sc_uint<ADDR_BITS>> module1_addr;
     sc_in<float> module1_data_in;
 
     // Входные порты для модуля 2
+    sc_out<bool> module2_enable;
     sc_in<bool> module2_rd;
     sc_in<bool> module2_wr;
     sc_in<sc_uint<ADDR_BITS>> module2_addr;
@@ -39,21 +41,20 @@ SC_MODULE(BusMultiplexer) {
             addr = module2_addr.read();
             data = module2_data_in.read();
         }
-        cout << "addr == ADDR " << addr  << "==" << ADDR << endl;
         if (addr == ADDR) {
             cout << "BusMultiplexer choose module 1" << endl;
             select = false;
-            return;
         }
         if (addr == ADDR+1) {
             cout << "BusMultiplexer choose module 2" << endl;
             select = true;
-            return;
         }
         bus_rd.write(rd);
         bus_wr.write(wr);
         bus_addr.write(addr);
         bus_data_in.write(data);
+        module1_enable.write(!select);
+        module2_enable.write(select);
     }
 
     SC_CTOR(BusMultiplexer) {

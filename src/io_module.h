@@ -4,6 +4,7 @@
 template<int ADDR_BITS>
 SC_MODULE(IoModule) {
     sc_in_clk clk_i;
+    sc_in<bool> enable;
     sc_out<bool> bus_rd;
     sc_out<bool> bus_wr;
     sc_out<sc_uint<ADDR_BITS>> bus_addr;
@@ -18,6 +19,7 @@ SC_MODULE(IoModule) {
     std::vector<BusData> data_vector;
     size_t current_index = 0;
     void process() {
+        if (!enable) return;
 //        cout << "Process triggered at " << sc_time_stamp() << endl; // Добавьте эту строку
 
         if (current_index < data_vector.size()) {
@@ -50,7 +52,7 @@ SC_MODULE(IoModule) {
         data_vector.push_back(BusData{0, 8});
         // Веса [][]
         */
-        data_vector.push_back(BusData{0x11, 999});
+        data_vector.push_back(BusData{0x11, 1});
 
         data_vector.push_back(BusData{0, 0.9990631251789995});
         data_vector.push_back(BusData{1, 0.7550705154311167});
