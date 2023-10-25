@@ -5,7 +5,6 @@ int sc_main(int argc, char* argv[]) {
     sc_clock clk("clk", 10, SC_NS, 0.5, 5, SC_NS, false);
     NeuralProcessor<16,32,4, 8> neuralProcessor("NeuralProcessor");
     neuralProcessor.clk_i(clk);
-
     sc_trace_file* tf = sc_create_vcd_trace_file("sigmoid");
     tf->set_time_unit(1, SC_NS);
     sc_start(100, SC_NS);

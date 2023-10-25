@@ -63,16 +63,15 @@ SC_MODULE(PeCore) {
         sensitive << clk_i.pos();
     }
 
-    sc_uint<4> index_core;
-    void init(sc_uint<4> core_index) {
+    sc_uint<ADDR_BITS> index_core;
+    void init(sc_uint<ADDR_BITS> core_index) {
         index_core = core_index;
     }
 
     // Core processing method
     void core_process() {
-        if (bus_addr.read() == index_core) {
+        if (bus_addr.read() == 1+index_core) {
             cout << "Im live " <<  index_core << endl;
-            cout << "Im live addr " <<  bus_addr.read() << endl;
         }
 
         if (rst_i) {
@@ -106,7 +105,6 @@ SC_MODULE(PeCore) {
         }
     }
 
-    // Helper functions for each stage
     void reset_core() {
         busy_o.write(false);
         stage = ProcessingStage::IDLE;
