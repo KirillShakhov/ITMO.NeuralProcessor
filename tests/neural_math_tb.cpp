@@ -60,6 +60,7 @@ int sc_main (int argc, char* argv[]) {
     weights[3].write(-17.452001343590457f);
     sc_start(10, SC_NS);
     enable = 0;
+
     sc_start(150, SC_NS);
 
     cout << "res" << output << endl;
