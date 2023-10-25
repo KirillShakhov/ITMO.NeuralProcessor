@@ -53,12 +53,10 @@ SC_MODULE(NeuralMath) {
                 multiplierArrayInput1[i].write(0);
                 multiplierArrayInput2[i].write(0);
             }
-            cout << "adderBufferOutput: " << adderBufferOutput.read() << endl;
-
             sigmoidInput.write(adderBufferOutput.read());
-            cout << "math_result: " << sigmoidOutput.read() << endl;
             if (count <= 0) {
                 busy.write(false);  // Not processing, so not busy
+                cout << sigmoidOutput.read()<< endl;
                 output.write(sigmoidOutput.read());
             }
         }

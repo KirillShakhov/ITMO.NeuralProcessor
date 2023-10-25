@@ -8,8 +8,6 @@ int sc_main(int argc, char* argv[]) {
     static const int DATA_BITS = 32;
     static const int POCKET_SIZE = 8;
 
-    sc_signal<bool>   clk;
-
     // Local Memory Signals
     sc_signal<bool>   local_memory_enable;
     sc_signal<bool>   local_memory_rd;
@@ -22,8 +20,16 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool>   pe_core_enable;
     sc_signal<bool>   pe_core_busy;
 
-    ClockGenerator clock_gen("clock_gen");
-    clock_gen.clk(clk);
+    sc_clock clk("ck1", 10, SC_NS);
+
+    LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE> memory("LocalMemory");
+    memory.clk(clk);
+    memory.enable(local_memory_enable);
+    memory.rd(local_memory_rd);
+    memory.wr(local_memory_wr);
+    memory.address(local_memory_addr);
+    memory.data_in(local_memory_data_in);
+    memory.data_out(local_memory_data_out);
 
     PeCore<ADDR_BITS,DATA_BITS,POCKET_SIZE> pe_core("PeCore");
     pe_core.clk_i(clk);
@@ -36,15 +42,6 @@ int sc_main(int argc, char* argv[]) {
     pe_core.local_memory_enable(local_memory_enable);
     pe_core.local_memory_data_bi(local_memory_data_out);
     pe_core.local_memory_data_bo(local_memory_data_in);
-
-    LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE> memory("LocalMemory");
-    memory.clk(clk);
-    memory.enable(local_memory_enable);
-    memory.rd(local_memory_rd);
-    memory.wr(local_memory_wr);
-    memory.address(local_memory_addr);
-    memory.data_in(local_memory_data_in);
-    memory.data_out(local_memory_data_out);
 
     sc_trace_file* tf = sc_create_vcd_trace_file("pe_core_tb");
     tf->set_time_unit(1, SC_NS);
@@ -93,6 +90,15 @@ int sc_main(int argc, char* argv[]) {
     sc_start(10, SC_NS);
     pe_core_rst = false;
     sc_start(400, SC_NS);
+
+    // Read Results
+    local_memory_enable = true;
+    local_memory_wr = false;
+    local_memory_rd = true;
+    local_memory_addr = 200;
+    sc_start(10, SC_NS);
+    cout << "Result: " << local_memory_data_out[0] << endl;
+
     sc_close_vcd_trace_file(tf);
     return 0;
 }
