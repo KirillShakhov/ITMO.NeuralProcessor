@@ -25,11 +25,12 @@ SC_MODULE(NeuralProcessor) {
     std::vector<sc_vector<sc_signal<float>>*> local_memory_data_in;
     std::vector<sc_vector<sc_signal<float>>*> local_memory_data_out;
 
-    sc_signal<bool, SC_MANY_WRITERS> bus_rd{"bus_rd", PE_CORES};
-    sc_signal<bool, SC_MANY_WRITERS> bus_wr{"bus_wr", PE_CORES};
-    sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr", PE_CORES};
-    sc_vector<sc_signal<float, SC_MANY_WRITERS>> bus_data_in{"bus_data_in",POCKET_SIZE};
-    sc_vector<sc_signal<float, SC_MANY_WRITERS>> bus_data_out{"bus_data_out",POCKET_SIZE};
+    sc_signal<bool, SC_MANY_WRITERS> bus_rd{"bus_rd"};
+    sc_signal<bool, SC_MANY_WRITERS> bus_wr{"bus_wr"};
+    sc_signal<sc_uint<ADDR_BITS>, SC_MANY_WRITERS> bus_addr{"bus_addr"};
+    // todo POCKET_SIZE to DATA_BITS
+    sc_signal<float, SC_MANY_WRITERS> bus_data_in{"bus_data_in"};
+    sc_signal<float, SC_MANY_WRITERS> bus_data_out{"bus_data_out"};
 
     SC_CTOR(NeuralProcessor) {
         for (int i = 0; i < PE_CORES; ++i) {

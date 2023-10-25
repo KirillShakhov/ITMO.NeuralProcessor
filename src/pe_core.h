@@ -24,8 +24,8 @@ SC_MODULE(PeCore) {
     sc_in<bool> bus_rd;
     sc_in<bool> bus_wr;
     sc_in<sc_uint<ADDR_BITS>> bus_addr;
-    sc_vector<sc_in<float>> bus_data_in{"bus_data_in", POCKET_SIZE};
-    sc_vector<sc_out<float>> bus_data_out{"bus_data_out", POCKET_SIZE};
+    sc_in<float> bus_data_in{"bus_data_in"};
+    sc_out<float> bus_data_out{"bus_data_out"};
 
     // Local Memory ports
     sc_out<bool> local_memory_enable;

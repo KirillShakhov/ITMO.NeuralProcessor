@@ -8,12 +8,6 @@ link_libraries(SystemC::systemc)
 
 add_executable(test_counter main.cpp)
 
-add_executable(trash
-        src/counter.h
-        tests/counter_tb.cpp
-        src/adder_array.h
-        tests/adder_array_tb.cpp)
-
 add_executable(test_systemc
         src/counter.h
         tests/counter_tb.cpp)
@@ -66,6 +60,10 @@ add_executable(test_pe_core
         src/pe_core.h
         src/local_memory.h
         tests/pe_core_tb.cpp)
+
+add_executable(test_io_module
+        src/io_module.h
+        tests/io_module_tb.cpp)
 
 add_executable(test_neural_processor
         src/neural_processor.h
