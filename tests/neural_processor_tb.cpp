@@ -8,7 +8,7 @@ int sc_main(int argc, char* argv[]) {
 //    Sigmoid sigmoid("Adder");
 //    sigmoid.input(input);
 //    sigmoid.output(output);
-    sc_clock clk("ck1", 10, SC_NS);
+    sc_clock clk("clk", 10, SC_NS, 0.5, 5, SC_NS, false);
 
     NeuralProcessor<16,32,4, 8> neuralProcessor("NeuralProcessor");
     neuralProcessor.clk_i(clk);

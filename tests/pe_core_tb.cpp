@@ -20,7 +20,15 @@ int sc_main(int argc, char* argv[]) {
     sc_signal<bool>   pe_core_enable;
     sc_signal<bool>   pe_core_busy;
 
-    sc_clock clk("ck1", 10, SC_NS);
+    // Bus
+    sc_signal<bool> bus_rd{"bus_rd"};
+    sc_signal<bool> bus_wr{"bus_wr"};
+    sc_signal<sc_uint<ADDR_BITS>> bus_addr{"bus_addr"};
+    sc_signal<float> bus_data_in{"bus_data_in"};
+    sc_signal<float> bus_data_out{"bus_data_out"};
+
+
+    sc_clock clk("clk", 10, SC_NS, 0.5, 5, SC_NS, false);
 
     LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE> memory("LocalMemory");
     memory.clk(clk);
@@ -42,6 +50,12 @@ int sc_main(int argc, char* argv[]) {
     pe_core.local_memory_enable(local_memory_enable);
     pe_core.local_memory_data_bi(local_memory_data_out);
     pe_core.local_memory_data_bo(local_memory_data_in);
+    // Bus
+    pe_core.bus_wr(bus_wr);
+    pe_core.bus_rd(bus_rd);
+    pe_core.bus_addr(bus_addr);
+    pe_core.bus_data_in(bus_data_in);
+    pe_core.bus_data_out(bus_data_out);
 
     sc_trace_file* tf = sc_create_vcd_trace_file("pe_core_tb");
     tf->set_time_unit(1, SC_NS);
