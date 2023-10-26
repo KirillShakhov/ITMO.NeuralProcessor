@@ -1,7 +1,13 @@
 #include <systemc.h>
 #include <cmath>
 
-template<int ADDR_BITS>
+enum class ControlUnitStage {
+    GET_CONFIG_SEND_ADDR,
+    GET_CONFIG_GET_DATA,
+    IDLE,
+};
+
+template<int ADDR_BITS, int SHARED_MEMORY_OFFSET>
 SC_MODULE(ControlUnit) {
     sc_in_clk clk_i;
     sc_in<bool> enable;
@@ -11,9 +17,26 @@ SC_MODULE(ControlUnit) {
     sc_out<float> bus_data_in;
     sc_in<float> bus_data_out;
 
+
+    ControlUnitStage stage;
+    int start_addr = 0;
     void process() {
-        if (!enable) return;
-        start();
+        if (!enable) {
+            start_addr = 0;
+            return;
+        }
+        switch (stage) {
+            case ControlUnitStage::GET_CONFIG_SEND_ADDR:
+                bus_addr.write(start_addr);
+                bus_wr.write(false);
+                bus_rd.write(true);
+                start_addr++;
+                stage = ControlUnitStage::GET_CONFIG_GET_DATA;
+                return;
+            case ControlUnitStage::GET_CONFIG_GET_DATA:
+                cout << "data: " << bus_data_out.read() << endl;
+                return;
+        }
     }
 
     void start(){

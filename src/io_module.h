@@ -52,7 +52,6 @@ SC_MODULE(IoModule) {
         data_vector.push_back(BusData{0, 8});
         // Веса [][]
         */
-        data_vector.push_back(BusData{0x11, 1});
 
         data_vector.push_back(BusData{0, 0.9990631251789995});
         data_vector.push_back(BusData{1, 0.7550705154311167});
@@ -90,8 +89,10 @@ SC_MODULE(IoModule) {
         data_vector.push_back(BusData{30, 0.9993619882449931});
         data_vector.push_back(BusData{31, -0.24792302708954958});
 
-        for (int i = 1; i < data_vector.size(); ++i) {
+        for (int i = 0; i < data_vector.size(); ++i) {
             data_vector[i].addr = data_vector[i].addr + 0x8000;
         }
+
+        data_vector.push_back(BusData{0x11, 0});
     }
 };

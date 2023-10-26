@@ -42,9 +42,11 @@ SC_MODULE(NeuralProcessor) {
     sc_signal<sc_uint<ADDR_BITS>> cu_bus_addr{"cu_bus_addr"};
     sc_signal<float> cu_bus_data_in{"cu_bus_data_in"};
 
+    static const int SHARED_MEMORY_OFFSET = 0x8000;
+
     IoModule<ADDR_BITS> ioModule{"IoModule"};
-    ControlUnit<ADDR_BITS> controlUnit{"ControlUnit"};
-    SharedMemory<ADDR_BITS, DATA_BITS, 0x8000> sharedMemory{"SharedMemory"};
+    ControlUnit<ADDR_BITS, SHARED_MEMORY_OFFSET> controlUnit{"ControlUnit"};
+    SharedMemory<ADDR_BITS, DATA_BITS, SHARED_MEMORY_OFFSET> sharedMemory{"SharedMemory"};
     BusMultiplexer<ADDR_BITS, 0x10> busMultiplexer{"busMultiplexer"};
 
     void process(){

@@ -9,11 +9,12 @@ SC_MODULE(SharedMemory) {
     sc_in<float> bus_data_in{"bus_data_in"};
     sc_out<float> bus_data_out{"bus_data_out"};
 
-    sc_uint<DATA_BITS> mem[(1 << ADDR_BITS)];
+    float mem[(1 << ADDR_BITS)];
     void process() {
         if (bus_addr.read() >= OFFSET) {
             int address = bus_addr.read() - OFFSET;
             if (bus_rd.read() != 0) {
+                cout << "Shared Memory Read Addr: " << address << " Data: " << mem[address] << endl;
                 bus_data_out.write(mem[address]);
             }
             if (bus_wr.read() != 0) {
