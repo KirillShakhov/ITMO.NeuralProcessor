@@ -57,7 +57,23 @@ SC_MODULE(ControlUnit) {
                     for (int j = 0; j < input_size; ++j) {
                         float in = read(SHARED_MEMORY_OFFSET + 2 + j);
                         cout << "in " << in << endl;
-                        write((0x1000*i)+3+(j*2), in);
+                        write((0x1000*(i+1))+3+(j*2), in);
+                    }
+                }
+                stage = ControlUnitStage::SEND_WEIGHTS;
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::SEND_WEIGHTS) {
+                for (int i = 0; i < PE_CORE; ++i) {
+                    for (int j = 0; j < weights_layers.size(); ++j) {
+                        int first_index_neuron = weights_layers[j]/PE_CORE*i;
+                        write((0x1000*(i+1)), first_index_neuron);
+                        for (int k = 0; k < weights_layers[j]; ++k) {
+                            float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + k*input_size);
+                            cout << "w" << k << ": " << w << endl;
+                            write((0x1000*(i+1))+3+(j*2)+1, w);
+                        }
                     }
                 }
                 wait();

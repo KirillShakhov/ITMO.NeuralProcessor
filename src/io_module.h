@@ -189,9 +189,9 @@ SC_MODULE(IoModule) {
         // Количество слоев
         push(3);
         // Количество весов в каждом слое []
-        push(784);
-        push(128);
-        push(24);
+        push(16);
+        push(8);
+        push(3);
         // Веса [][]
         weightsPush();
     }

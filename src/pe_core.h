@@ -86,7 +86,7 @@ SC_MODULE(PeCore) {
 
         // load data
         if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
-            local_memory_addr.write(bus_addr.read()-(0x1000*index_core));
+            local_memory_addr.write(bus_addr.read()-(0x1000*(index_core+1)));
             local_memory_enable.write(true);
             local_memory_wr.write(true);
             local_memory_single_channel.write(true);
