@@ -10,6 +10,7 @@ enum class ControlUnitStage {
     GET_CONFIG_WEIGHT_COUNT,
     GET_CONFIG_WEIGHT_SIZE,
     ACTIVATE_PE_CORE,
+    WRITE_WEIGHT,
     CALCULATE,
     STOP_WRITE_IN_CORE,
     SEND_INPUT_SIZE,
@@ -17,7 +18,7 @@ enum class ControlUnitStage {
     IDLE,
 };
 
-template<int ADDR_BITS, int SHARED_MEMORY_OFFSET>
+template<int ADDR_BITS, int SHARED_MEMORY_OFFSET, int PE_CORE>
 SC_MODULE(ControlUnit) {
     sc_in_clk clk_i;
     sc_in<bool> enable;
@@ -39,6 +40,7 @@ SC_MODULE(ControlUnit) {
     int weight_size;
     std::vector<int> weights_layers;
 
+    int core_loaded;
     int data_loaded;
     void process() {
         if (!enable) {
@@ -128,7 +130,15 @@ SC_MODULE(ControlUnit) {
         if (stage == ControlUnitStage::STOP_WRITE_IN_CORE) {
             bus_addr.write(0x0F01);
             bus_wr.write(true);
-            stage = ControlUnitStage::CALCULATE;
+            stage = ControlUnitStage::WRITE_WEIGHT;
+            core_loaded = 0;
+            data_loaded = 0;
+            return;
+        }
+        if (stage == ControlUnitStage::WRITE_WEIGHT) {
+            if (core_loaded > PE_CORE){
+
+            }
             return;
         }
         if (stage == ControlUnitStage::CALCULATE) {

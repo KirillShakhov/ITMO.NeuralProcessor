@@ -6,6 +6,7 @@ SC_MODULE(LocalMemory) {
     sc_in<bool> enable;
     sc_in<bool> wr;
     sc_in<bool> rd;
+    sc_in<bool> single_channel;
     sc_in<sc_uint<ADDR_BITS>> address;
     sc_vector<sc_in<float>> data_in{"data_in", POCKET_SIZE};
     sc_vector<sc_out<float>> data_out{"data_out", POCKET_SIZE};
@@ -22,6 +23,10 @@ SC_MODULE(LocalMemory) {
         }
         if (wr) {
             cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
+            if (single_channel){
+                mem[address.read()] = data_in[0].read();
+                return;
+            }
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 mem[address.read()+i] = data_in[i].read();
             }

@@ -16,6 +16,7 @@ SC_MODULE(NeuralProcessor) {
     sc_vector<sc_signal<bool>> local_memory_enable{"local_memory_enable", PE_CORES};
     sc_vector<sc_signal<sc_uint<ADDR_BITS>>> local_memory_addr{"local_memory_addr", PE_CORES};
     sc_vector<sc_signal<bool>> local_memory_rd{"local_memory_rd", PE_CORES};
+    sc_vector<sc_signal<bool>> local_memory_single_channel{"local_memory_single_channel", PE_CORES};
     sc_vector<sc_signal<bool>> local_memory_wr{"local_memory_wr", PE_CORES};
 
     std::vector<sc_vector<sc_signal<float>>*> local_memory_data_in;
@@ -42,7 +43,7 @@ SC_MODULE(NeuralProcessor) {
     static const int SHARED_MEMORY_OFFSET = 0x8000;
 
     IoModule<ADDR_BITS> ioModule{"IoModule"};
-    ControlUnit<ADDR_BITS, SHARED_MEMORY_OFFSET> controlUnit{"ControlUnit"};
+    ControlUnit<ADDR_BITS, SHARED_MEMORY_OFFSET, PE_CORES> controlUnit{"ControlUnit"};
     SharedMemory<ADDR_BITS, DATA_BITS, SHARED_MEMORY_OFFSET> sharedMemory{"SharedMemory"};
     BusMultiplexer<ADDR_BITS, 0x10> busMultiplexer{"busMultiplexer"};
 
@@ -96,6 +97,7 @@ SC_MODULE(NeuralProcessor) {
             local_memories[i]->address(local_memory_addr[i]);
             local_memories[i]->rd(local_memory_rd[i]);
             local_memories[i]->wr(local_memory_wr[i]);
+            local_memories[i]->single_channel(local_memory_single_channel[i]);
             local_memories[i]->data_in(*local_memory_data_in[i]);
             local_memories[i]->data_out(*local_memory_data_out[i]);
 
@@ -106,6 +108,7 @@ SC_MODULE(NeuralProcessor) {
             cores[i]->local_memory_addr(local_memory_addr[i]);
             cores[i]->local_memory_wr(local_memory_wr[i]);
             cores[i]->local_memory_rd(local_memory_rd[i]);
+            cores[i]->local_memory_single_channel(local_memory_single_channel[i]);
             cores[i]->local_memory_data_bi(*local_memory_data_out[i]);
             cores[i]->local_memory_data_bo(*local_memory_data_in[i]);
             // Bus

@@ -37,6 +37,7 @@ SC_MODULE(PeCore) {
     sc_out<bool> local_memory_enable;
     sc_out<bool> local_memory_rd;
     sc_out<bool> local_memory_wr;
+    sc_out<bool> local_memory_single_channel;
     sc_out<sc_uint<ADDR_BITS>> local_memory_addr;
     sc_vector<sc_out<float>> local_memory_data_bo{"local_memory_data_bo", POCKET_SIZE};
     sc_vector<sc_in<float>> local_memory_data_bi{"local_memory_data_bi", POCKET_SIZE};
@@ -81,6 +82,7 @@ SC_MODULE(PeCore) {
         local_memory_enable.write(false);
         local_memory_wr.write(false);
         local_memory_rd.write(false);
+        local_memory_single_channel.write(false);
         sn_wr.write(false);
 
         // start load data
@@ -147,9 +149,8 @@ SC_MODULE(PeCore) {
         local_memory_addr.write(index);
         local_memory_enable.write(true);
         local_memory_wr.write(true);
-        for (int i = 0; i < POCKET_SIZE; ++i) {
-            local_memory_data_bo[i].write(bus_data_out.read());
-        }
+        local_memory_single_channel.write(true);
+        local_memory_data_bo[0].write(bus_data_out.read());
         index++;
     }
 
