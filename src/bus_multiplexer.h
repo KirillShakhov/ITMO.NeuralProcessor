@@ -41,12 +41,12 @@ SC_MODULE(BusMultiplexer) {
             addr = module2_addr.read();
             data = module2_data_in.read();
         }
-        if (addr == ADDR) {
-            cout << "BusMultiplexer choose module 1" << endl;
+        if (addr == ADDR && wr) {
+            cout << "BusMultiplexer choose IoModule" << endl;
             select = false;
         }
-        if (addr == ADDR+1) {
-            cout << "BusMultiplexer choose module 2" << endl;
+        if (addr == (ADDR+1) && wr) {
+            cout << "BusMultiplexer choose ControlUnit" << endl;
             select = true;
         }
         bus_rd.write(rd);

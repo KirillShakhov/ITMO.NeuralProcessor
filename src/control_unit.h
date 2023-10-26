@@ -35,6 +35,8 @@ SC_MODULE(ControlUnit) {
                 return;
             case ControlUnitStage::GET_CONFIG_GET_DATA:
                 cout << "data: " << bus_data_out.read() << endl;
+                bus_addr.write(0x10);
+                bus_wr.write(true);
                 return;
         }
     }
