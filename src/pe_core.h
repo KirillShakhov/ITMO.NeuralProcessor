@@ -88,7 +88,7 @@ SC_MODULE(PeCore) {
             sn_wr.write(false);
 
             // load data
-            if (bus_addr.read() >= (0x1000*(index_core+1)) && bus_addr.read() <= (0x1000*(index_core+1))+0xFFF) {
+            if ((bus_addr.read() >= (0x1000*(index_core+1))) && (bus_addr.read() <= (0x1000*(index_core+1))+0xFFF)) {
                 if (bus_wr) {
                     local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
                     local_memory_enable.write(true);
@@ -137,20 +137,25 @@ SC_MODULE(PeCore) {
                     for (int i = 0; i < neurons_count; ++i) {
                         int temp_size = 0;
                         while (temp_size < size) {
-                            auto results = lm_read(4+(size*i)+temp_size);
+                            const int addr = 4+(temp_size);
+                            cout << "size "<< size << endl;
+                            cout << "read_ddd "<< addr << endl;
+                            cout << "POCKET_SIZE "<< POCKET_SIZE << endl;
+                            auto results = lm_read(addr);
                             for (int k = 0; k < (POCKET_SIZE/2); ++k) {
-                                if (temp_size < size) {
+//                                if (temp_size < size) {
                                     cout << "math_inputs("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[k * 2] << endl;
                                     cout << "math_weights("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[(k * 2) + 1] << endl;
                                     math_inputs[k].write(results[k * 2]);
                                     math_weights[k].write(results[(k * 2) + 1]);
-                                }
-                                else{
-                                    math_inputs[k].write(0);
-                                    math_weights[k].write(0);
-                                }
-                                temp_size++;
+//                                }
+//                                else{
+//                                    math_inputs[k].write(0);
+//                                    math_weights[k].write(0);
+//                                }
                             }
+                            temp_size = temp_size + POCKET_SIZE;
+                            cout << "temp_size "<< temp_size << endl;
                         }
                         wait();
                         for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
@@ -159,9 +164,10 @@ SC_MODULE(PeCore) {
                         }
                         math_enable.write(false);
                         while (math_busy.read()) {
+                            cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                             wait();
                         }
-                        lm_write(res_addr, math_output.read());
+//                        lm_write(res_addr, math_output.read());
                         cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                         stage = ProcessingStage::IDLE;
 //                        send_data_to_pe_cores(math_output.read());
@@ -251,6 +257,7 @@ SC_MODULE(PeCore) {
         local_memory_wr.write(false);
         local_memory_addr.write(addr);
         wait();
+        local_memory_rd.write(false);
         std::vector<float> results;
         results.reserve(POCKET_SIZE);
         for (int i = 0; i < POCKET_SIZE; ++i) {

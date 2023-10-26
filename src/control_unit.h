@@ -53,11 +53,13 @@ SC_MODULE(ControlUnit) {
                 continue;
             }
             if (stage == ControlUnitStage::SEND_INPUTS) {
-                for (int i = 0; i < PE_CORE; ++i) {
+                for (int core_i = 0; core_i < PE_CORE; ++core_i) {
                     for (int j = 0; j < input_size; ++j) {
                         float in = read(SHARED_MEMORY_OFFSET + 2 + j);
                         cout << "in " << in << endl;
-                        write((0x1000*(i+1))+3+(j*2), in);
+                        int first_address = 0x1000*(core_i + 1);
+                        const int service_info_count = 4;
+                        write(first_address+service_info_count+(j*2), in);
                     }
                 }
                 stage = ControlUnitStage::SEND_WEIGHTS;
@@ -65,7 +67,6 @@ SC_MODULE(ControlUnit) {
                 continue;
             }
             if (stage == ControlUnitStage::SEND_WEIGHTS) {
-                bool next;
                 for (int j = 0; j < 1; ++j) {
                     int in_layer_size = input_size;
                     for (int core_i = 0; core_i < PE_CORE; ++core_i) {
@@ -74,7 +75,7 @@ SC_MODULE(ControlUnit) {
                         cout << "first_index_neuron " << first_index_neuron << endl;
                         cout << "first_address " << first_address << endl;
                         int w_offset = (weights_layers[j]*in_layer_size/PE_CORE);
-                        const int service_info_count = 3;
+                        const int service_info_count = 4;
                         write(first_address, first_index_neuron);
                         write(first_address+1, 2000);
                         write(first_address+2, in_layer_size);
