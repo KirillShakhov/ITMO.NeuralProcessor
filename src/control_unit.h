@@ -73,15 +73,17 @@ SC_MODULE(ControlUnit) {
                         int first_address = 0x1000*(core_i + 1);
                         cout << "first_index_neuron " << first_index_neuron << endl;
                         cout << "first_address " << first_address << endl;
+                        int w_offset = (weights_layers[j]*in_layer_size/PE_CORE);
+                        const int service_info_count = 3;
                         write(first_address, first_index_neuron);
                         write(first_address+1, 2000);
                         write(first_address+2, in_layer_size);
-                        int w_offset = (weights_layers[j]*in_layer_size/PE_CORE);
+                        write(first_address+3, weights_layers[j]/PE_CORE);
                         for (int l = 0; l < w_offset; ++l) {
                             float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + l + w_offset * core_i);
                             cout << "w" << l << ": " << w << endl;
-                            cout << "addr " << first_address+3+(l*2)+1 << endl;
-                            write(first_address+3+(l*2)+1, w);
+                            cout << "addr " << first_address+service_info_count+(l*2)+1 << endl;
+                            write(first_address+service_info_count+(l*2)+1, w);
                         }
                     }
                     write(0x100, 1);

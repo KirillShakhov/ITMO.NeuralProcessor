@@ -5,11 +5,10 @@
 enum class ProcessingStage {
     START,
     READ_DATA_SEND_ADDR,
-    READ_DATA_GET_DATA,
-    COMPUTE_SET,
     COMPUTE_WAIT,
     WRITE_RESULT,
     NEW,
+    CALCULATE,
     IDLE
 };
 
@@ -53,8 +52,10 @@ SC_MODULE(PeCore) {
 
     // Internal state variables
     ProcessingStage stage;
+    int neuron_index;
     sc_uint<ADDR_BITS> res_addr;
-    sc_uint<ADDR_BITS> size;
+    int size;
+    int neurons_count;
 
     // Constructor
     SC_CTOR(PeCore) : neuralMath("neuralMath") {
@@ -117,22 +118,54 @@ SC_MODULE(PeCore) {
                 }
                 if (stage == ProcessingStage::READ_DATA_SEND_ADDR){
                     cout << "READ_DATA_SEND_ADDR" << endl;
-                    math_reset.write(false);
-                    math_enable.write(true);
-                    auto results1 = lm_read(0);
-                    for (int i = 0; i < POCKET_SIZE; ++i) {
-                        cout << "results[" << i << "] " << results1[i] << endl;
-                    }
-
-                    res_addr = local_memory_data_bi[1].read();
-                    size = local_memory_data_bi[2].read();
+                    auto results = lm_read(0);
+                    neuron_index = results[0];
+                    res_addr = results[1];
+                    size = results[2];
+                    neurons_count = results[3];
+                    cout << "neuron_index " << neuron_index << endl;
                     cout << "res_addr " << res_addr << endl;
                     cout << "size " << size << endl;
-                    local_memory_enable.write(true);
-                    local_memory_rd.write(true);
-                    local_memory_wr.write(false);
-                    local_memory_addr.write(2);
-                    stage = ProcessingStage::IDLE;
+                    cout << "neurons_count " << neurons_count << endl;
+                    stage = ProcessingStage::CALCULATE;
+                    wait();
+                    continue;
+                }
+                if (stage == ProcessingStage::CALCULATE){
+                    math_reset.write(false);
+                    math_enable.write(true);
+                    for (int i = 0; i < neurons_count; ++i) {
+                        int temp_size = 0;
+                        while (temp_size < size) {
+                            auto results = lm_read(4+(size*i)+temp_size);
+                            for (int k = 0; k < (POCKET_SIZE/2); ++k) {
+                                if (temp_size < size) {
+                                    cout << "math_inputs("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[k * 2] << endl;
+                                    cout << "math_weights("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[(k * 2) + 1] << endl;
+                                    math_inputs[k].write(results[k * 2]);
+                                    math_weights[k].write(results[(k * 2) + 1]);
+                                }
+                                else{
+                                    math_inputs[k].write(0);
+                                    math_weights[k].write(0);
+                                }
+                                temp_size++;
+                            }
+                        }
+                        wait();
+                        for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
+                            math_inputs[k].write(0);
+                            math_weights[k].write(0);
+                        }
+                        math_enable.write(false);
+                        while (math_busy.read()) {
+                            wait();
+                        }
+                        lm_write(res_addr, math_output.read());
+                        cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
+                        stage = ProcessingStage::IDLE;
+//                        send_data_to_pe_cores(math_output.read());
+                    }
                     wait();
                     continue;
                 }
