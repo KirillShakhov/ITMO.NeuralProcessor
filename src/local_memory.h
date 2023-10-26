@@ -17,6 +17,10 @@ SC_MODULE(LocalMemory) {
     void proc(){
         if (!enable) return;
         if (rd) {
+            for (int i = 0; i < 40; ++i) {
+                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+            }
+
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 data_out[i].write(mem[address.read()+i]);
             }

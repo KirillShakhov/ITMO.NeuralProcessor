@@ -9,7 +9,8 @@ enum class ProcessingStage {
     COMPUTE_SET,
     COMPUTE_WAIT,
     WRITE_RESULT,
-    NEW
+    NEW,
+    IDLE
 };
 
 template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE, int PE_CORES>
@@ -65,7 +66,7 @@ SC_MODULE(PeCore) {
         neuralMath.weights(math_weights);
         neuralMath.output(math_output);
 
-        SC_METHOD(core_process);
+        SC_THREAD(core_process);
         sensitive << clk_i.pos();
     }
 
@@ -78,89 +79,72 @@ SC_MODULE(PeCore) {
     bool busy;
     // Core processing method
     void core_process() {
-        local_memory_enable.write(false);
-        local_memory_wr.write(false);
-        local_memory_rd.write(false);
-        local_memory_single_channel.write(false);
-        sn_wr.write(false);
+        while (true) {  // Infinite loop for the thread
+            local_memory_enable.write(false);
+            local_memory_wr.write(false);
+            local_memory_rd.write(false);
+            local_memory_single_channel.write(false);
+            sn_wr.write(false);
 
-        // load data
-        if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
-            if (bus_wr) {
-                local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
-                local_memory_enable.write(true);
-                local_memory_wr.write(true);
-                local_memory_single_channel.write(true);
-                local_memory_data_bo[0].write(bus_data_out.read());
+            // load data
+            if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
+                if (bus_wr) {
+                    local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
+                    local_memory_enable.write(true);
+                    local_memory_wr.write(true);
+                    local_memory_single_channel.write(true);
+                    local_memory_data_bo[0].write(bus_data_out.read());
+                }
+                wait();  // Pause and wait for next trigger
+                continue;
             }
-            return;
-        }
 
-        // start
-        if (bus_addr.read() == 0x100 && bus_wr.read()) {
-            cout << "start core: " <<  index_core << endl;
-            enable = true;
-            stage = ProcessingStage::START;
-            return;
-        }
-        read_data_to_pe_cores();
-        if (enable) {
-            switch (stage) {
-                case ProcessingStage::START:
-                    initialize_core();
-                    break;
-                case ProcessingStage::READ_DATA_SEND_ADDR:
-                    read_data_send_addr();
-                    break;
-                case ProcessingStage::READ_DATA_GET_DATA:
-                    read_data_get_data();
-                    break;
-                case ProcessingStage::COMPUTE_SET:
-                    compute_set();
-                    break;
-                case ProcessingStage::COMPUTE_WAIT:
-                    compute_wait();
-                    break;
-                case ProcessingStage::WRITE_RESULT:
-                    write_result();
-                    break;
-                case ProcessingStage::NEW:
-                    new_stage();
-                    break;
+            // start
+            if (bus_addr.read() == 0x100 && bus_wr.read()) {
+                cout << "start core: " <<  index_core << endl;
+                enable = true;
+                stage = ProcessingStage::START;
             }
+            read_data_to_pe_cores();
+            if (enable) {
+                if (stage == ProcessingStage::START){
+                    busy = true;
+                    math_reset.write(true);
+                    math_enable.write(false);
+                    stage = ProcessingStage::READ_DATA_SEND_ADDR;
+                    wait();
+                    continue;
+                }
+                if (stage == ProcessingStage::READ_DATA_SEND_ADDR){
+                    cout << "READ_DATA_SEND_ADDR" << endl;
+                    math_reset.write(false);
+                    math_enable.write(true);
+                    auto results1 = lm_read(0);
+                    for (int i = 0; i < POCKET_SIZE; ++i) {
+                        cout << "results[" << i << "] " << results1[i] << endl;
+                    }
+
+                    res_addr = local_memory_data_bi[1].read();
+                    size = local_memory_data_bi[2].read();
+                    cout << "res_addr " << res_addr << endl;
+                    cout << "size " << size << endl;
+                    local_memory_enable.write(true);
+                    local_memory_rd.write(true);
+                    local_memory_wr.write(false);
+                    local_memory_addr.write(2);
+                    stage = ProcessingStage::IDLE;
+                    wait();
+                    continue;
+                }
+                if (stage == ProcessingStage::IDLE){
+                    wait();
+                    continue;
+                }
+            }
+            wait();  // Pause and wait for next trigger
         }
     }
 
-    void initialize_core() {
-        busy = true;
-        math_reset.write(true);
-        math_enable.write(false);
-        stage = ProcessingStage::READ_DATA_SEND_ADDR;
-    }
-
-    void read_data_send_addr() {
-        cout << "READ_DATA_SEND_ADDR" << endl;
-        local_memory_enable.write(true);
-        local_memory_rd.write(true);
-        local_memory_wr.write(false);
-        local_memory_addr.write(0);
-        stage = ProcessingStage::READ_DATA_GET_DATA;
-        math_reset.write(false);
-        math_enable.write(true);
-    }
-
-    void read_data_get_data() {
-        cout << "READ_DATA_GET_DATA" << endl;
-        res_addr = local_memory_data_bi[0].read();
-        size = local_memory_data_bi[1].read();
-        cout << "res_addr " << res_addr << endl;
-        cout << "size " << size << endl;
-        local_memory_enable.write(true);
-        local_memory_rd.write(true);
-        local_memory_wr.write(false);
-        local_memory_addr.write(2);
-        stage = ProcessingStage::COMPUTE_SET;
-    }
 
     void compute_set() {
         cout << "COMPUTE_SET" << endl;
@@ -218,5 +202,27 @@ SC_MODULE(PeCore) {
         local_memory_enable.write(false);
         local_memory_rd.write(false);
         local_memory_wr.write(true);
+    }
+
+    void lm_write(sc_uint<ADDR_BITS> addr, float data){
+        local_memory_enable.write(true);
+        local_memory_rd.write(false);
+        local_memory_wr.write(true);
+        local_memory_addr.write(res_addr);
+        local_memory_data_bo[0].write(math_output.read());
+    }
+
+    std::vector<float> lm_read(sc_uint<ADDR_BITS> addr){
+        local_memory_enable.write(true);
+        local_memory_rd.write(true);
+        local_memory_wr.write(false);
+        local_memory_addr.write(addr);
+        wait();
+        std::vector<float> results;
+        results.reserve(POCKET_SIZE);
+        for (int i = 0; i < POCKET_SIZE; ++i) {
+            results.push_back(local_memory_data_bi[i].read());
+        }
+        return results;
     }
 };

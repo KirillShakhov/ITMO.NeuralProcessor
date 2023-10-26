@@ -66,14 +66,17 @@ SC_MODULE(ControlUnit) {
             }
             if (stage == ControlUnitStage::SEND_WEIGHTS) {
                 bool next;
-                for (int j = 0; j < weights_layers.size(); ++j) {
+                for (int j = 0; j < 1; ++j) {
                     for (int i = 0; i < PE_CORE; ++i) {
                         int first_index_neuron = weights_layers[j]/PE_CORE*i;
-                        write((0x1000*(i+1)), first_index_neuron);
+                        int first_address = 0x1000*(i+1);
+                        cout << "first_index_neuron " << first_index_neuron << endl;
+                        write(first_address, first_index_neuron);
                         for (int k = 0; k < weights_layers[j]; ++k) {
-                            float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + k*input_size);
+                            float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + k*input_size + i*(weights_layers[j]*input_size/PE_CORE));
                             cout << "w" << k << ": " << w << endl;
-                            write((0x1000*(i+1))+3+(k*2)+1, w);
+                            cout << "addr " << first_address+3+(k*2)+1 << endl;
+                            write(first_address+3+(k*2)+1, w);
                         }
                         write(0x100, 1);
 
@@ -81,10 +84,8 @@ SC_MODULE(ControlUnit) {
                         bus_wr.write(false);
                         bus_rd.write(false);
                     }
-                    while(!next) {
-                        wait();
-                    }
                 }
+                stage = ControlUnitStage::IDLE;
                 wait();
                 continue;
             }
