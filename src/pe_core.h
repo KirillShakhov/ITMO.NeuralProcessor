@@ -86,16 +86,18 @@ SC_MODULE(PeCore) {
 
         // load data
         if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
-            local_memory_addr.write(bus_addr.read()-(0x1000*(index_core+1)));
-            local_memory_enable.write(true);
-            local_memory_wr.write(true);
-            local_memory_single_channel.write(true);
-            local_memory_data_bo[0].write(bus_data_out.read());
+            if (bus_wr) {
+                local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
+                local_memory_enable.write(true);
+                local_memory_wr.write(true);
+                local_memory_single_channel.write(true);
+                local_memory_data_bo[0].write(bus_data_out.read());
+            }
             return;
         }
 
         // start
-        if (bus_addr.read() == (0x100*index_core)+2 && bus_wr.read()) {
+        if (bus_addr.read() == 0x100 && bus_wr.read()) {
             cout << "start core: " <<  index_core << endl;
             enable = true;
             stage = ProcessingStage::START;
