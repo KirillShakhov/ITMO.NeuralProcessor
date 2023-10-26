@@ -48,7 +48,7 @@ SC_MODULE(NeuralProcessor) {
 
     std::vector<sc_signal<bool>*> sn_wr;
     std::vector<sc_signal<sc_uint<ADDR_BITS>>*> sn_index;
-    std::vector<sc_signal<sc_uint<ADDR_BITS>>*> sn_data;
+    std::vector<sc_signal<float>*> sn_data;
 
     void process(){
         if (bus_addr.read() == 0x0){
@@ -80,7 +80,7 @@ SC_MODULE(NeuralProcessor) {
                     POCKET_SIZE
             ));
             std::string sn_data_name = "sn_data_" + std::to_string(i+1);
-            sn_data.push_back(new sc_signal<sc_uint<ADDR_BITS>>(
+            sn_data.push_back(new sc_signal<float>(
                     sn_data_name.c_str(),
                     POCKET_SIZE
             ));

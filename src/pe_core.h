@@ -28,10 +28,10 @@ SC_MODULE(PeCore) {
     // Bus with pe cores
     sc_out<bool>  sn_wr;
     sc_out<sc_uint<ADDR_BITS>> sn_index;
-    sc_out<sc_uint<ADDR_BITS>> sn_data;
+    sc_out<float> sn_data;
     sc_vector<sc_in<bool>>  sn_wr_i{"sn_wr", PE_CORES-1};
     sc_vector<sc_in<sc_uint<ADDR_BITS>>> sn_index_i{"sn_index", PE_CORES-1};
-    sc_vector<sc_in<sc_uint<ADDR_BITS>>> sn_data_i{"sn_data", PE_CORES-1};
+    sc_vector<sc_in<float>> sn_data_i{"sn_data", PE_CORES-1};
 
     // Local Memory ports
     sc_out<bool> local_memory_enable;
@@ -81,6 +81,7 @@ SC_MODULE(PeCore) {
         local_memory_enable.write(false);
         local_memory_wr.write(false);
         local_memory_rd.write(false);
+        sn_wr.write(false);
 
         // start load data
         if ((bus_addr.read() == 0x100*index_core || bus_addr.read() == 0x0F00) && bus_wr.read()) {
@@ -104,6 +105,7 @@ SC_MODULE(PeCore) {
             stage = ProcessingStage::START;
             return;
         }
+        read_data_to_pe_cores();
         if (enable) {
             switch (stage) {
                 case ProcessingStage::GET_DATA:
@@ -229,7 +231,22 @@ SC_MODULE(PeCore) {
         local_memory_wr.write(true);
         local_memory_addr.write(res_addr);
         local_memory_data_bo[0].write(math_output.read());
+        send_data_to_pe_cores(math_output.read());
         stage = ProcessingStage::NEW;
+    }
+
+    void read_data_to_pe_cores(){
+        for (int i = 0; i < (PE_CORES-1); ++i) {
+            if (sn_wr_i[i].read()){
+                cout << "read_data_to_pe_cores " << sn_data_i[i].read() << endl;
+            }
+        }
+    }
+
+    void send_data_to_pe_cores(float data){
+        sn_wr.write(true);
+        sn_index.write(0);
+        sn_data.write(data);
     }
 
     void new_stage() {
