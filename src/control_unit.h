@@ -37,7 +37,7 @@ SC_MODULE(ControlUnit) {
     int input_size;
     int weight_size;
 
-    int input_size_tmp;
+    int data_loaded;
     void process() {
         if (!enable) {
             start_addr = 0;
@@ -81,11 +81,12 @@ SC_MODULE(ControlUnit) {
             // pe activate
             bus_addr.write(0x100);
             bus_wr.write(true);
+            bus_data_in.write(0x0);
             stage = ControlUnitStage::SEND_INPUT_SIZE;
             return;
         }
         if (stage == ControlUnitStage::SEND_INPUT_SIZE){
-            input_size_tmp = input_size;
+            data_loaded = 0;
             bus_addr.write(SHARED_MEMORY_OFFSET+1);
             bus_rd.write(true);
             bus_data_in.write(input_size);
@@ -93,15 +94,21 @@ SC_MODULE(ControlUnit) {
         }
         if (stage == ControlUnitStage::SEND_INPUT){
             bus_rd.write(true);
-            bus_addr.write(SHARED_MEMORY_OFFSET+1+(input_size-input_size_tmp));
-            input_size_tmp--;
-            if (input_size_tmp < 0){
+            bus_addr.write(SHARED_MEMORY_OFFSET+(data_loaded));
+            data_loaded++;
+            if (data_loaded > input_size + 2){
                 cout << "STOP" << endl;
                 stage = ControlUnitStage::STOP_WRITE_IN_CORE;
             }
         }
         if (stage == ControlUnitStage::STOP_WRITE_IN_CORE) {
             bus_addr.write(0x101);
+            bus_wr.write(true);
+            stage = ControlUnitStage::CALCULATE;
+            return;
+        }
+        if (stage == ControlUnitStage::CALCULATE) {
+            bus_addr.write(0x102);
             bus_wr.write(true);
             stage = ControlUnitStage::IDLE;
             return;

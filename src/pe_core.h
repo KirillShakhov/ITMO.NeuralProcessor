@@ -4,7 +4,7 @@
 
 enum class ProcessingStage {
     GET_DATA,
-    IDLE,
+    START,
     READ_DATA_SEND_ADDR,
     READ_DATA_GET_DATA,
     COMPUTE_SET,
@@ -70,25 +70,38 @@ SC_MODULE(PeCore) {
     bool busy;
     // Core processing method
     void core_process() {
-        if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
-            cout << "Activate core: " <<  index_core << endl;
-            reset_core();
-            return;
-        }
-        if (bus_addr.read() == (0x100*index_core)+1 && bus_wr.read()) {
-            cout << "DeActivate core: " <<  index_core << endl;
-            enable = false;
-            stage = ProcessingStage::IDLE;
-        }
         local_memory_enable.write(false);
         local_memory_wr.write(false);
         local_memory_rd.write(false);
+
+        // start load data
+        if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
+            cout << "Activate core: " <<  index_core << endl;
+            index = bus_data_in.read();
+            enable = true;
+            stage = ProcessingStage::GET_DATA;
+            return;
+        }
+        // stop load data
+        if (bus_addr.read() == (0x100*index_core)+1 && bus_wr.read()) {
+            cout << "DeActivate core: " <<  index_core << endl;
+            enable = false;
+            stage = ProcessingStage::START;
+            return;
+        }
+        // start
+        if (bus_addr.read() == (0x100*index_core)+2 && bus_wr.read()) {
+            cout << "start core: " <<  index_core << endl;
+            enable = true;
+            stage = ProcessingStage::START;
+            return;
+        }
         if (enable) {
             switch (stage) {
                 case ProcessingStage::GET_DATA:
                     get_data();
                     return;
-                case ProcessingStage::IDLE:
+                case ProcessingStage::START:
                     initialize_core();
                     break;
                 case ProcessingStage::READ_DATA_SEND_ADDR:
@@ -164,6 +177,7 @@ SC_MODULE(PeCore) {
         cout << "READ_DATA_GET_DATA" << endl;
         res_addr = local_memory_data_bi[0].read();
         size = local_memory_data_bi[1].read();
+        cout << "res_addr " << res_addr << endl;
         cout << "size " << size << endl;
         local_memory_enable.write(true);
         local_memory_rd.write(true);
@@ -199,7 +213,7 @@ SC_MODULE(PeCore) {
     }
 
     void write_result() {
-        cout << "WRITE_RESULT" << endl;
+        cout << "WRITE_RESULT " << math_output.read() << endl;
         local_memory_enable.write(true);
         local_memory_rd.write(false);
         local_memory_wr.write(true);
