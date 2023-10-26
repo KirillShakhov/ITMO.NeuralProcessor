@@ -36,7 +36,7 @@ SC_MODULE(IoModule) {
         SC_METHOD(process);
         sensitive << clk_i.pos();
 
-        loadDataTest();
+        loadData();
 
         for (int i = 0; i < data_vector.size(); ++i) {
             data_vector[i].addr = data_vector[i].addr + 0x8000;

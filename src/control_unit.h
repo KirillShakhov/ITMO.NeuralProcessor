@@ -76,15 +76,21 @@ SC_MODULE(ControlUnit) {
                         cout << "first_address " << first_address << endl;
                         int w_offset = (weights_layers[j]*in_layer_size/PE_CORE);
                         const int service_info_count = 4;
+                        const int neuron_in_core_count = weights_layers[j]/PE_CORE;
                         write(first_address, first_index_neuron);
                         write(first_address+1, 2000);
                         write(first_address+2, in_layer_size);
-                        write(first_address+3, weights_layers[j]/PE_CORE);
-                        for (int l = 0; l < w_offset; ++l) {
-                            float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + l + w_offset * core_i);
-                            cout << "w" << l << ": " << w << endl;
-                            cout << "addr " << first_address+service_info_count+(l*2)+1 << endl;
-                            write(first_address+service_info_count+(l*2)+1, w);
+                        write(first_address+3, neuron_in_core_count);
+                        cout << "weights_layers[j] " << weights_layers[j] << endl;
+                        cout << "in_layer_size " << in_layer_size << endl;
+                        cout << "neuron_in_core_count " << neuron_in_core_count << endl;
+                        int w_index = 0;
+                        for (int i = 0; i < in_layer_size; ++i) {
+                                float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + (weights_layers[j]*i) + (core_i*neuron_in_core_count));
+                                cout << "w" << i << ": " << w << endl;
+                                cout << "addr " << first_address + service_info_count + (w_index * 2) + 1 << endl;
+                                write(first_address + service_info_count + (w_index * 2) + 1, w);
+                                w_index++;
                         }
                     }
                     write(0x100, 1);
