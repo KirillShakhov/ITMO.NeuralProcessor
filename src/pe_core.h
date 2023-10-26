@@ -77,7 +77,7 @@ SC_MODULE(PeCore) {
         // start load data
         if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
             cout << "Activate core: " <<  index_core << endl;
-            index = bus_data_in.read();
+            index = bus_data_in.read()-1;
             enable = true;
             stage = ProcessingStage::GET_DATA;
             return;
@@ -128,7 +128,6 @@ SC_MODULE(PeCore) {
 
     void reset_core() {
         busy = false;
-        index = 0;
         enable = true;
         stage = ProcessingStage::GET_DATA;
     }
@@ -138,7 +137,9 @@ SC_MODULE(PeCore) {
         local_memory_addr.write(index);
         local_memory_enable.write(true);
         local_memory_wr.write(true);
-        local_memory_data_bo[0].write(bus_data_out.read());
+        for (int i = 0; i < POCKET_SIZE; ++i) {
+            local_memory_data_bo[i].write(bus_data_out.read());
+        }
         index++;
     }
 
@@ -189,6 +190,7 @@ SC_MODULE(PeCore) {
     void compute_set() {
         cout << "COMPUTE_SET" << endl;
         local_memory_enable.write(true);
+        local_memory_rd.write(true);
         local_memory_addr.write(local_memory_addr.read() + POCKET_SIZE);
         for (int i = 0; i < (POCKET_SIZE / 2); ++i) {
             math_inputs[i].write(local_memory_data_bi[i * 2].read());

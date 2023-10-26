@@ -96,7 +96,7 @@ SC_MODULE(ControlUnit) {
             bus_rd.write(true);
             bus_addr.write(SHARED_MEMORY_OFFSET+(data_loaded));
             data_loaded++;
-            if (data_loaded > input_size + 2){
+            if (data_loaded > (input_size*2) + 2 + 1){
                 cout << "STOP" << endl;
                 stage = ControlUnitStage::STOP_WRITE_IN_CORE;
             }

@@ -16,9 +16,6 @@ int sc_main(int argc, char* argv[]) {
     sc_vector<sc_signal<float>>  local_memory_data_in{"local_memory_data_in", POCKET_SIZE};
     sc_vector<sc_signal<float>>  local_memory_data_out{"local_memory_data_out", POCKET_SIZE};
     // Pe Core Signals
-    sc_signal<bool>   pe_core_rst;
-    sc_signal<bool>   pe_core_enable;
-    sc_signal<bool>   pe_core_busy;
 
     // Bus
     sc_signal<bool> bus_rd{"bus_rd"};
@@ -41,9 +38,6 @@ int sc_main(int argc, char* argv[]) {
 
     PeCore<ADDR_BITS,DATA_BITS,POCKET_SIZE> pe_core("PeCore");
     pe_core.clk_i(clk);
-    pe_core.rst_i(pe_core_rst);
-    pe_core.enable_i(pe_core_enable);
-    pe_core.busy_o(pe_core_busy);
     pe_core.local_memory_addr(local_memory_addr);
     pe_core.local_memory_wr(local_memory_wr);
     pe_core.local_memory_rd(local_memory_rd);
@@ -60,9 +54,6 @@ int sc_main(int argc, char* argv[]) {
     sc_trace_file* tf = sc_create_vcd_trace_file("pe_core_tb");
     tf->set_time_unit(1, SC_NS);
     sc_trace(tf, clk, "clk");
-    sc_trace(tf, pe_core_enable, "pe_core_enable");
-    sc_trace(tf, pe_core_busy, "pe_core_busy");
-    sc_trace(tf, pe_core_rst, "pe_core_rst");
     sc_trace(tf, local_memory_enable, "local_memory_enable");
     sc_trace(tf, local_memory_wr, "local_memory_wr");
     sc_trace(tf, local_memory_rd, "local_memory_rd");
@@ -122,10 +113,7 @@ int sc_main(int argc, char* argv[]) {
     local_memory_enable = false;
     local_memory_addr = 0;
     sc_start(10, SC_NS);
-    pe_core_rst = true;
-    pe_core_enable = true;
     sc_start(10, SC_NS);
-    pe_core_rst = false;
     sc_start(400, SC_NS);
 
     //

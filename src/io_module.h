@@ -36,7 +36,88 @@ SC_MODULE(IoModule) {
         SC_METHOD(process);
         sensitive << clk_i.pos();
 
+        loadTestPeCore1();
 
+        for (int i = 0; i < data_vector.size(); ++i) {
+            data_vector[i].addr = data_vector[i].addr + 0x8000;
+        }
+        // Start Control Unit
+        data_vector.push_back(BusData{0x11, 0});
+    }
+
+    int index = 0;
+
+    void push(float data) {
+        data_vector.push_back(BusData{index, data});
+        index++;
+    }
+
+    void loadTestPeCore(){
+        push(2000);
+        push(8);
+
+        push(0.9477695660751321);
+        push(-4.0961078688499155);
+        push(0.9937557133609726);
+        push(-14.892351723504802);
+        push(0.999224345493303);
+        push(-8.589540987991482);
+        push(0.9992826834871);
+        push(-9.79067155131993);
+
+        push( 0.9991566901389833);
+        push( 6.262679709682974);
+        push( 0.9999998737712528);
+        push( 45.32539856128967);
+        push( 0.9259701252780933);
+        push( 6.072379717196129);
+        push( 0.9993096918528903);
+        push( -17.452001343590457);
+    }
+
+    void loadTestPeCore1(){
+        push(2000);
+        push(16);
+
+        push(0.9990631251789995);
+        push(0.7550705154311167);
+        push(0.9950311958727136);
+        push(0.6481739272549456);
+        push(0.9965130706156015);
+        push(-0.03327157936852162);
+        push(0.9987707591591141);
+        push(-0.42765877612887726);
+
+        push(0.999039373995782);
+        push(0.2268078469768019);
+        push(0.9572634478083041);
+        push(0.5068606953692869);
+        push(0.007089524427052066);
+        push(0.7370486058746694);
+        push(0.9973003050392526);
+        push(0.5651521802118312);
+
+        push(0.9882247596998172);
+        push(0.11509488104106606);
+        push(0.9012400716710605);
+        push(1.1424770795739387);
+        push(0.9683287440476079);
+        push(3.1055546438514123);
+        push(0.9964592661223179);
+        push(0.7880725968841713);
+
+        push(0.2479846432195069);
+        push(0.3983616222528344);
+        push(0.003428754170688519);
+        push(0.8743129908062628);
+        push(0.9931021038679053);
+        push(0.269989261270187);
+        push(0.9993619882449931);
+        push(-0.24792302708954958);
+
+    }
+
+    void loadData(){
         // Адрес для записи результатов
         push(2000);
         // Размерность входных значений
@@ -113,19 +194,6 @@ SC_MODULE(IoModule) {
         push(24);
         // Веса [][]
         weightsPush();
-
-        for (int i = 0; i < data_vector.size(); ++i) {
-            data_vector[i].addr = data_vector[i].addr + 0x8000;
-        }
-        // Start Control Unit
-        data_vector.push_back(BusData{0x11, 0});
-    }
-
-    int index = 0;
-
-    void push(float data) {
-        data_vector.push_back(BusData{index, data});
-        index++;
     }
 
     void weightsPush() {
