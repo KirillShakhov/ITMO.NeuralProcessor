@@ -87,13 +87,13 @@ SC_MODULE(PeCore) {
             sn_wr.write(false);
 
             // load data
-            if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
+            if (bus_addr.read() >= (0x1000*(index_core+1)) && bus_addr.read() <= (0x1000*(index_core+1))+0xFFF) {
                 if (bus_wr) {
                     local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
                     local_memory_enable.write(true);
                     local_memory_wr.write(true);
                     local_memory_single_channel.write(true);
-                    local_memory_data_bo[0].write(bus_data_out.read());
+                    local_memory_data_bo[0].write(bus_data_in.read());
                 }
                 wait();  // Pause and wait for next trigger
                 continue;

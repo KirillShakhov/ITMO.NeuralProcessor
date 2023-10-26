@@ -17,7 +17,7 @@ SC_MODULE(LocalMemory) {
     void proc(){
         if (!enable) return;
         if (rd) {
-            for (int i = 0; i < 40; ++i) {
+            for (int i = 0; i < 5; ++i) {
                 cout << "local_memory[" << i << "] = " << mem[i] << endl;
             }
 
