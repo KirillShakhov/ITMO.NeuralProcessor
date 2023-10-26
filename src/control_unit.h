@@ -10,6 +10,9 @@ enum class ControlUnitStage {
     GET_CONFIG_WEIGHT_SIZE,
     ACTIVATE_PE_CORE,
     CALCULATE,
+    STOP_WRITE_IN_CORE,
+    SEND_INPUT_SIZE,
+    SEND_INPUT,
     IDLE,
 };
 
@@ -34,6 +37,7 @@ SC_MODULE(ControlUnit) {
     int input_size;
     int weight_size;
 
+    int input_size_tmp;
     void process() {
         if (!enable) {
             start_addr = 0;
@@ -74,47 +78,37 @@ SC_MODULE(ControlUnit) {
         if (stage == ControlUnitStage::GET_CONFIG_WEIGHT_SIZE){
             weight_size = bus_data_out.read();
             cout << "weight_size: " << weight_size << endl;
-            stage = ControlUnitStage::ACTIVATE_PE_CORE;
-//            bus_addr.write(SHARED_MEMORY_OFFSET+1+input_size);
-//            bus_rd.write(true);
-//            stage = ControlUnitStage::GET_CONFIG_WEIGHT_SIZE;
-            return;
-        }
-        if (stage == ControlUnitStage::ACTIVATE_PE_CORE){
+            // pe activate
             bus_addr.write(0x100);
             bus_wr.write(true);
-            stage = ControlUnitStage::CALCULATE;
+            stage = ControlUnitStage::SEND_INPUT_SIZE;
+            return;
         }
-        if (stage == ControlUnitStage::CALCULATE){
-
+        if (stage == ControlUnitStage::SEND_INPUT_SIZE){
+            input_size_tmp = input_size;
+            bus_addr.write(SHARED_MEMORY_OFFSET+1);
+            bus_rd.write(true);
+            bus_data_in.write(input_size);
+            stage = ControlUnitStage::SEND_INPUT;
         }
-        return;
-        switch (stage) {
-            case ControlUnitStage::GET_RESULT_ADDR_SEND:
-                stage = ControlUnitStage::GET_CONFIG_SEND_ADDR;
-                return;
-            case ControlUnitStage::GET_CONFIG_SEND_ADDR:
-//                sh_send_addr(start_addr);
-                bus_addr.write(SHARED_MEMORY_OFFSET);
-                bus_wr.write(false);
-                bus_rd.write(true);
-
-                start_addr++;
-                stage = ControlUnitStage::GET_CONFIG_GET_DATA;
-                return;
-            case ControlUnitStage::GET_CONFIG_GET_DATA:
-                cout << "data: " << bus_data_out.read() << endl;
-//                stop();
-                return;
+        if (stage == ControlUnitStage::SEND_INPUT){
+            bus_rd.write(true);
+            bus_addr.write(SHARED_MEMORY_OFFSET+1+(input_size-input_size_tmp));
+            input_size_tmp--;
+            if (input_size_tmp < 0){
+                cout << "STOP" << endl;
+                stage = ControlUnitStage::STOP_WRITE_IN_CORE;
+            }
         }
-    }
-
-    void sh_send_addr(sc_uint<ADDR_BITS> addr){
-    }
-
-    void stop(){
-        bus_addr.write(0x10);
-        bus_wr.write(true);
+        if (stage == ControlUnitStage::STOP_WRITE_IN_CORE) {
+            bus_addr.write(0x101);
+            bus_wr.write(true);
+            stage = ControlUnitStage::IDLE;
+            return;
+        }
+        if (stage == ControlUnitStage::IDLE) {
+            return;
+        }
     }
 
     SC_CTOR(ControlUnit) {

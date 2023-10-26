@@ -12,9 +12,6 @@ SC_MODULE(NeuralProcessor) {
 
     std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> cores;
     std::vector<LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> local_memories;
-    sc_vector<sc_signal<bool>> pe_core_rst{"pe_core_rst", PE_CORES};
-    sc_vector<sc_signal<bool>> pe_core_enable{"pe_core_enable", PE_CORES};
-    sc_vector<sc_signal<bool>> pe_core_busy{"pe_core_busy", PE_CORES};
 
     sc_vector<sc_signal<bool>> local_memory_enable{"local_memory_enable", PE_CORES};
     sc_vector<sc_signal<sc_uint<ADDR_BITS>>> local_memory_addr{"local_memory_addr", PE_CORES};
@@ -85,9 +82,6 @@ SC_MODULE(NeuralProcessor) {
 
             cores[i]->init(i);
             cores[i]->clk_i(clk_i);
-            cores[i]->rst_i(pe_core_rst[i]);
-            cores[i]->enable_i(pe_core_enable[i]);
-            cores[i]->busy_o(pe_core_busy[i]);
             // Local Memory
             cores[i]->local_memory_enable(local_memory_enable[i]);
             cores[i]->local_memory_addr(local_memory_addr[i]);

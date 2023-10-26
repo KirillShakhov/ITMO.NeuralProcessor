@@ -21,6 +21,7 @@ SC_MODULE(LocalMemory) {
             }
         }
         if (wr) {
+            cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 mem[address.read()+i] = data_in[i].read();
             }

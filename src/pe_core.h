@@ -3,6 +3,7 @@
 #include "neural_math.h"
 
 enum class ProcessingStage {
+    GET_DATA,
     IDLE,
     READ_DATA_SEND_ADDR,
     READ_DATA_GET_DATA,
@@ -16,9 +17,6 @@ template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE>
 SC_MODULE(PeCore) {
     // Input ports
     sc_in_clk clk_i;
-    sc_in<bool> rst_i;
-    sc_in<bool> enable_i;
-    sc_out<bool> busy_o;
 
     // Bus ports
     sc_in<bool> bus_rd;
@@ -68,18 +66,28 @@ SC_MODULE(PeCore) {
         index_core = core_index;
     }
 
+    bool enable;
+    bool busy;
     // Core processing method
     void core_process() {
         if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
-            cout << "Activate core:" <<  index_core << endl;
-        }
-
-        if (rst_i) {
+            cout << "Activate core: " <<  index_core << endl;
             reset_core();
             return;
         }
-        if (enable_i) {
+        if (bus_addr.read() == (0x100*index_core)+1 && bus_wr.read()) {
+            cout << "DeActivate core: " <<  index_core << endl;
+            enable = false;
+            stage = ProcessingStage::IDLE;
+        }
+        local_memory_enable.write(false);
+        local_memory_wr.write(false);
+        local_memory_rd.write(false);
+        if (enable) {
             switch (stage) {
+                case ProcessingStage::GET_DATA:
+                    get_data();
+                    return;
                 case ProcessingStage::IDLE:
                     initialize_core();
                     break;
@@ -106,12 +114,36 @@ SC_MODULE(PeCore) {
     }
 
     void reset_core() {
-        busy_o.write(false);
-        stage = ProcessingStage::IDLE;
+        busy = false;
+        index = 0;
+        enable = true;
+        stage = ProcessingStage::GET_DATA;
     }
 
+    int index;
+    void get_data(){
+        local_memory_addr.write(index);
+        local_memory_enable.write(true);
+        local_memory_wr.write(true);
+        local_memory_data_bo[0].write(bus_data_out.read());
+        index++;
+    }
+
+//    void get_data(){
+//        if (bus_addr.read() > (0x1000*index_core) && bus_addr.read() < ((0x1FFF*index_core))){
+//            if (bus_wr.read()) {
+//                local_memory_addr.write(bus_addr.read() - (0x1000 * index_core));
+//                local_memory_enable.write(true);
+//                local_memory_wr.write(true);
+//                for (int i = 0; i < POCKET_SIZE; ++i) {
+//                    local_memory_data_bo[i].write(bus_data_in.read());
+//                }
+//            }
+//        }
+//    }
+
     void initialize_core() {
-        busy_o.write(true);
+        busy = true;
         math_reset.write(true);
         math_enable.write(false);
         stage = ProcessingStage::READ_DATA_SEND_ADDR;
