@@ -75,7 +75,7 @@ SC_MODULE(PeCore) {
         local_memory_rd.write(false);
 
         // start load data
-        if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
+        if ((bus_addr.read() == 0x100*index_core || bus_addr.read() == 0x0F00) && bus_wr.read()) {
             cout << "Activate core: " <<  index_core << endl;
             index = bus_data_in.read()-1;
             enable = true;
@@ -83,7 +83,7 @@ SC_MODULE(PeCore) {
             return;
         }
         // stop load data
-        if (bus_addr.read() == (0x100*index_core)+1 && bus_wr.read()) {
+        if ((bus_addr.read() == (0x100*index_core)+1 || bus_addr.read() == 0x0F01) && bus_wr.read()) {
             cout << "DeActivate core: " <<  index_core << endl;
             enable = false;
             stage = ProcessingStage::START;

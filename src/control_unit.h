@@ -7,6 +7,7 @@ enum class ControlUnitStage {
     GET_CONFIG_SEND_ADDR,
     GET_CONFIG_GET_DATA,
     GET_CONFIG_INPUT_SIZE,
+    GET_CONFIG_WEIGHT_COUNT,
     GET_CONFIG_WEIGHT_SIZE,
     ACTIVATE_PE_CORE,
     CALCULATE,
@@ -36,6 +37,7 @@ SC_MODULE(ControlUnit) {
     sc_uint<ADDR_BITS> result_addr;
     int input_size;
     int weight_size;
+    std::vector<int> weights_layers;
 
     int data_loaded;
     void process() {
@@ -78,11 +80,32 @@ SC_MODULE(ControlUnit) {
         if (stage == ControlUnitStage::GET_CONFIG_WEIGHT_SIZE){
             weight_size = bus_data_out.read();
             cout << "weight_size: " << weight_size << endl;
-            // pe activate
-            bus_addr.write(0x100);
-            bus_wr.write(true);
-            bus_data_in.write(0x0);
-            stage = ControlUnitStage::SEND_INPUT_SIZE;
+            data_loaded = 0;
+            stage = ControlUnitStage::GET_CONFIG_WEIGHT_COUNT;
+
+            bus_rd.write(true);
+            bus_addr.write(SHARED_MEMORY_OFFSET+2+input_size+1+data_loaded);
+            data_loaded++;
+            wait = true;
+            return;
+        }
+        if (stage == ControlUnitStage::GET_CONFIG_WEIGHT_COUNT){
+            if (data_loaded > weight_size) {
+                bus_rd.write(false);
+//                 pe activates
+                bus_addr.write(0x0F00);
+                bus_wr.write(true);
+                bus_data_in.write(0x0);
+                stage = ControlUnitStage::SEND_INPUT_SIZE;
+                return;
+            }
+            bus_rd.write(true);
+            bus_addr.write(SHARED_MEMORY_OFFSET+2+input_size+1+data_loaded);
+            int weight_layer = bus_data_out.read();
+            weights_layers.push_back(weight_layer);
+            cout << "weight_layer: " << bus_data_out.read() << endl;
+            data_loaded++;
+            wait = true;
             return;
         }
         if (stage == ControlUnitStage::SEND_INPUT_SIZE){
@@ -91,18 +114,19 @@ SC_MODULE(ControlUnit) {
             bus_rd.write(true);
             bus_data_in.write(input_size);
             stage = ControlUnitStage::SEND_INPUT;
+            return;
         }
         if (stage == ControlUnitStage::SEND_INPUT){
             bus_rd.write(true);
             bus_addr.write(SHARED_MEMORY_OFFSET+(data_loaded));
             data_loaded++;
-            if (data_loaded > (input_size*2) + 2 + 1){
+            if (data_loaded > input_size + 2 + 1){
                 cout << "STOP" << endl;
                 stage = ControlUnitStage::STOP_WRITE_IN_CORE;
             }
         }
         if (stage == ControlUnitStage::STOP_WRITE_IN_CORE) {
-            bus_addr.write(0x101);
+            bus_addr.write(0x0F01);
             bus_wr.write(true);
             stage = ControlUnitStage::CALCULATE;
             return;
