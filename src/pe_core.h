@@ -136,23 +136,23 @@ SC_MODULE(PeCore) {
                     math_enable.write(true);
                     for (int i = 0; i < neurons_count; ++i) {
                         int temp_size = 0;
-                        while (temp_size < size) {
+                        while (temp_size < (size*2)) {
                             const int addr = 4+(temp_size);
                             cout << "size "<< size << endl;
                             cout << "read_ddd "<< addr << endl;
                             cout << "POCKET_SIZE "<< POCKET_SIZE << endl;
                             auto results = lm_read(addr);
                             for (int k = 0; k < (POCKET_SIZE/2); ++k) {
-//                                if (temp_size < size) {
-                                    cout << "math_inputs("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[k * 2] << endl;
-                                    cout << "math_weights("<<i<<")["<< index_core <<"]("<<temp_size<<"): " << results[(k * 2) + 1] << endl;
+                                if ((k * 2) + 1 <= size) {
+                                    cout << "math_inputs["<< index_core <<"]("<<addr + (k * 2)<<"): " << results[k * 2] << endl;
+                                    cout << "math_weights["<< index_core <<"]("<<addr + (k * 2) + 1<<"): " << results[(k * 2) + 1] << endl;
                                     math_inputs[k].write(results[k * 2]);
                                     math_weights[k].write(results[(k * 2) + 1]);
-//                                }
-//                                else{
-//                                    math_inputs[k].write(0);
-//                                    math_weights[k].write(0);
-//                                }
+                                }
+                                else{
+                                    math_inputs[k].write(0);
+                                    math_weights[k].write(0);
+                                }
                             }
                             temp_size = temp_size + POCKET_SIZE;
                             cout << "temp_size "<< temp_size << endl;
@@ -164,7 +164,6 @@ SC_MODULE(PeCore) {
                         }
                         math_enable.write(false);
                         while (math_busy.read()) {
-                            cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                             wait();
                         }
 //                        lm_write(res_addr, math_output.read());
