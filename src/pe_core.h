@@ -3,7 +3,6 @@
 #include "neural_math.h"
 
 enum class ProcessingStage {
-    GET_DATA,
     START,
     READ_DATA_SEND_ADDR,
     READ_DATA_GET_DATA,
@@ -85,21 +84,16 @@ SC_MODULE(PeCore) {
         local_memory_single_channel.write(false);
         sn_wr.write(false);
 
-        // start load data
-        if ((bus_addr.read() == 0x100*index_core || bus_addr.read() == 0x0F00) && bus_wr.read()) {
-            cout << "Activate core: " <<  index_core << endl;
-            index = bus_data_in.read()-1;
-            enable = true;
-            stage = ProcessingStage::GET_DATA;
+        // load data
+        if (bus_addr.read() > (0x1000*(index_core+1)) && bus_addr.read() < (0x1000*(index_core+1))+0xFFF) {
+            local_memory_addr.write(bus_addr.read()-(0x1000*index_core));
+            local_memory_enable.write(true);
+            local_memory_wr.write(true);
+            local_memory_single_channel.write(true);
+            local_memory_data_bo[0].write(bus_data_out.read());
             return;
         }
-        // stop load data
-        if ((bus_addr.read() == (0x100*index_core)+1 || bus_addr.read() == 0x0F01) && bus_wr.read()) {
-            cout << "DeActivate core: " <<  index_core << endl;
-            enable = false;
-            stage = ProcessingStage::START;
-            return;
-        }
+
         // start
         if (bus_addr.read() == (0x100*index_core)+2 && bus_wr.read()) {
             cout << "start core: " <<  index_core << endl;
@@ -110,9 +104,6 @@ SC_MODULE(PeCore) {
         read_data_to_pe_cores();
         if (enable) {
             switch (stage) {
-                case ProcessingStage::GET_DATA:
-                    get_data();
-                    return;
                 case ProcessingStage::START:
                     initialize_core();
                     break;
@@ -137,35 +128,6 @@ SC_MODULE(PeCore) {
             }
         }
     }
-
-    void reset_core() {
-        busy = false;
-        enable = true;
-        stage = ProcessingStage::GET_DATA;
-    }
-
-    int index;
-    void get_data(){
-        local_memory_addr.write(index);
-        local_memory_enable.write(true);
-        local_memory_wr.write(true);
-        local_memory_single_channel.write(true);
-        local_memory_data_bo[0].write(bus_data_out.read());
-        index++;
-    }
-
-//    void get_data(){
-//        if (bus_addr.read() > (0x1000*index_core) && bus_addr.read() < ((0x1FFF*index_core))){
-//            if (bus_wr.read()) {
-//                local_memory_addr.write(bus_addr.read() - (0x1000 * index_core));
-//                local_memory_enable.write(true);
-//                local_memory_wr.write(true);
-//                for (int i = 0; i < POCKET_SIZE; ++i) {
-//                    local_memory_data_bo[i].write(bus_data_in.read());
-//                }
-//            }
-//        }
-//    }
 
     void initialize_core() {
         busy = true;
