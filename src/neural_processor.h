@@ -10,7 +10,7 @@ template<int ADDR_BITS, int DATA_BITS, int PE_CORES, int POCKET_SIZE>
 SC_MODULE(NeuralProcessor) {
     sc_in<bool> clk_i;
 
-    std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> cores;
+    std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE, PE_CORES>*> cores;
     std::vector<LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> local_memories;
 
     sc_vector<sc_signal<bool>> local_memory_enable{"local_memory_enable", PE_CORES};
@@ -46,6 +46,10 @@ SC_MODULE(NeuralProcessor) {
     SharedMemory<ADDR_BITS, DATA_BITS, SHARED_MEMORY_OFFSET> sharedMemory{"SharedMemory"};
     BusMultiplexer<ADDR_BITS, 0x10> busMultiplexer{"busMultiplexer"};
 
+    std::vector<sc_signal<bool>*> sn_wr;
+    std::vector<sc_signal<sc_uint<ADDR_BITS>>*> sn_index;
+    std::vector<sc_signal<sc_uint<ADDR_BITS>>*> sn_data;
+
     void process(){
         if (bus_addr.read() == 0x0){
             cout << "Start" << endl;
@@ -65,10 +69,25 @@ SC_MODULE(NeuralProcessor) {
                     in_name.c_str(),
                     POCKET_SIZE
             ));
+            std::string sn_wr_name = "sn_wr_" + std::to_string(i+1);
+            sn_wr.push_back(new sc_signal<bool>(
+                    sn_wr_name.c_str(),
+                    POCKET_SIZE
+            ));
+            std::string sn_index_name = "sn_index_" + std::to_string(i+1);
+            sn_index.push_back(new sc_signal<sc_uint<ADDR_BITS>>(
+                    sn_index_name.c_str(),
+                    POCKET_SIZE
+            ));
+            std::string sn_data_name = "sn_data_" + std::to_string(i+1);
+            sn_data.push_back(new sc_signal<sc_uint<ADDR_BITS>>(
+                    sn_data_name.c_str(),
+                    POCKET_SIZE
+            ));
         }
 
         for (int i = 0; i < PE_CORES; ++i) {
-            cores.push_back(new PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE>(("core" + std::to_string(i)).c_str()));
+            cores.push_back(new PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE, PE_CORES>(("core" + std::to_string(i)).c_str()));
             local_memories.push_back(new LocalMemory<16, DATA_BITS, POCKET_SIZE>(("local_memory" + std::to_string(i)).c_str()));
 
 
@@ -95,6 +114,18 @@ SC_MODULE(NeuralProcessor) {
             cores[i]->bus_addr(bus_addr);
             cores[i]->bus_data_in(bus_data_in);
             cores[i]->bus_data_out(bus_data_out);
+            //
+            cores[i]->sn_wr(*sn_wr[i]);
+            cores[i]->sn_index(*sn_index[i]);
+            cores[i]->sn_data(*sn_data[i]);
+
+            for (int j = 0; j < PE_CORES; ++j) {
+                if (i == j) continue;
+                int index = (i < j) ? j-1 : j;
+                cores[i]->sn_wr_i[index](*sn_wr[j]);
+                cores[i]->sn_index_i[index](*sn_index[j]);
+                cores[i]->sn_data_i[index](*sn_data[j]);
+            }
         }
 
         ioModule.clk_i(clk_i);

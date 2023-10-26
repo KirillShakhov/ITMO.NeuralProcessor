@@ -13,7 +13,7 @@ enum class ProcessingStage {
     NEW
 };
 
-template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE>
+template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE, int PE_CORES>
 SC_MODULE(PeCore) {
     // Input ports
     sc_in_clk clk_i;
@@ -24,6 +24,14 @@ SC_MODULE(PeCore) {
     sc_in<sc_uint<ADDR_BITS>> bus_addr;
     sc_in<float> bus_data_in{"bus_data_in"};
     sc_out<float> bus_data_out{"bus_data_out"};
+
+    // Bus with pe cores
+    sc_out<bool>  sn_wr;
+    sc_out<sc_uint<ADDR_BITS>> sn_index;
+    sc_out<sc_uint<ADDR_BITS>> sn_data;
+    sc_vector<sc_in<bool>>  sn_wr_i{"sn_wr", PE_CORES-1};
+    sc_vector<sc_in<sc_uint<ADDR_BITS>>> sn_index_i{"sn_index", PE_CORES-1};
+    sc_vector<sc_in<sc_uint<ADDR_BITS>>> sn_data_i{"sn_data", PE_CORES-1};
 
     // Local Memory ports
     sc_out<bool> local_memory_enable;
