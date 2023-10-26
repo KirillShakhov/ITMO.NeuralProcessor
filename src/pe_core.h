@@ -70,8 +70,8 @@ SC_MODULE(PeCore) {
 
     // Core processing method
     void core_process() {
-        if (bus_addr.read() == 1+index_core) {
-            cout << "Im live " <<  index_core << endl;
+        if (bus_addr.read() == 0x100*index_core && bus_wr.read()) {
+            cout << "Activate core:" <<  index_core << endl;
         }
 
         if (rst_i) {

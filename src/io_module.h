@@ -124,7 +124,7 @@ SC_MODULE(IoModule) {
     int index = 0;
 
     void push(float data) {
-        data_vector.push_back(BusData{0, data});
+        data_vector.push_back(BusData{index, data});
         index++;
     }
 

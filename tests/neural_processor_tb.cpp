@@ -7,7 +7,7 @@ int sc_main(int argc, char* argv[]) {
     neuralProcessor.clk_i(clk);
     sc_trace_file* tf = sc_create_vcd_trace_file("sigmoid");
     tf->set_time_unit(1, SC_NS);
-    sc_start(10000, SC_NS);
+    sc_start(15000, SC_NS);
     sc_close_vcd_trace_file(tf);
     return 0;
 }
