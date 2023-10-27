@@ -5,6 +5,7 @@ enum class ControlUnitStage {
     GET_CONFIG,
     SEND_INPUTS,
     SEND_WEIGHTS,
+    START_CORES,
     IDLE
 };
 
@@ -26,6 +27,7 @@ SC_MODULE(ControlUnit) {
     int input_size;
     int weight_size;
     std::vector<int> weights_layers;
+    int service_info = 0;
 
     void process() {
         while (true) {
@@ -48,39 +50,11 @@ SC_MODULE(ControlUnit) {
                     cout << "weights_layer: " << w << endl;
                     weights_layers.push_back(w);
                 }
-                stage = ControlUnitStage::SEND_INPUTS;
-                wait();
-                continue;
-            }
-            if (stage == ControlUnitStage::SEND_INPUTS) {
-                for (int core_i = 0; core_i < PE_CORE; ++core_i) {
-                    for (int j = 0; j < input_size; ++j) {
-                        float in = read(SHARED_MEMORY_OFFSET + 2 + j);
-                        cout << "in " << in << endl;
-                        int first_address = 0x1000*(core_i + 1);
-                        const int service_info_count = 4;
-                        write(first_address+service_info_count+(j*2), in);
-                    }
-                }
                 stage = ControlUnitStage::SEND_WEIGHTS;
                 wait();
                 continue;
             }
             if (stage == ControlUnitStage::SEND_WEIGHTS) {
-//                int all_weight = get_all_weight();
-//                cout << "all_weight " << all_weight << endl;
-//                cout << "get_layer_size() " << get_layer_size() << endl;
-//                for (int i = 0; i < get_layer_size(); ++i) {
-//                    cout << "get_layer_wright_count" << get_layer_wright_count(i) << endl;
-//                }
-//
-//                int tmp = input_size;
-//                for (int i = 0; i < all_weight; ++i) {
-//                    float weight = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + i);
-//
-//
-//                }
-
 
 
                 int current_core = 0;
@@ -98,12 +72,11 @@ SC_MODULE(ControlUnit) {
                 int totalWeightsProcessed = 0; // Общее количество обработанных весов
                 int layerIndex = 0; // Индекс текущего слоя
 
-                int service_info = 0;
                 for (int i = 0; i < PE_CORE; ++i) {
                     cout << "weight_size " << weight_size << endl;
                     write(getFirstAddressCore(i), weight_size);
                 }
-                service_info += weight_size*3;
+                service_info = weight_size*3;
                 for (int j = 0; j < weight_size; ++j) {
                     for (int i = 0; i < PE_CORE; ++i) {
                         int input_count = get_layer_weight_count(j)/weights_layers[j];
@@ -153,56 +126,34 @@ SC_MODULE(ControlUnit) {
                     offsetCores[coreIndex]++;
                     int offset = offsetCores[coreIndex];
                     cout << "offset " << offset << endl;
-                    cout << "service_info " << service_info << endl;
                     int first_address = 0x1000*(coreIndex + 1);
                     write(first_address+service_info+(offset*2), weight);
 
                     // Увеличить общее количество обработанных весов
                     totalWeightsProcessed++;
                 }
+                stage = ControlUnitStage::SEND_INPUTS;
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::SEND_INPUTS) {
 
-//                cout << "w" << i << ": " << weight << " layer:" << layerIndex << " group: " << groupIndex << " core: " << coreIndex << endl;
+                cout << "service_info " << service_info << endl;
 
-//                i, weight, layer, group
-
-//                cout << "w" << i << ": " << weight << " layer:" << layerIndex << " group: " << groupsInLayer << endl;
-
-
-//                cout << "w" << i << ": " << weight << " layer:" << layerIndex << endl;
-
-
-//                for (int j = -1; j < weight_size; ++j) {
-//                    int in_layer_size = input_size;
-//                    if (j >= 0) {
-//                        in_layer_size = weights_layers[j];
-//                    }
-//                    for (int core_i = 0; core_i < PE_CORE; ++core_i) {
-//                        const int service_info_count = 3;
-//                        int first_index_neuron = weights_layers[j] / PE_CORE * core_i;
-//                        int first_address = 0x1000*(core_i + 1);
-//                        if (j >= 0) {
-//                            first_address = 0x1000*(core_i + 1)+(service_info_count*(j+1))+(input_size*weights_layers[j]);
-//                        }
-//                        cout << "first_index_neuron " << first_index_neuron << endl;
-//                        cout << "first_address " << first_address << endl;
-//                        const int neuron_in_core_count = weights_layers[j]/PE_CORE;
-//                        write(first_address, first_index_neuron);
-//                        write(first_address+2, in_layer_size);
-//                        write(first_address+3, neuron_in_core_count);
-//                        cout << "weights_layers[j] " << weights_layers[j] << endl;
-//                        cout << "in_layer_size " << in_layer_size << endl;
-//                        cout << "neuron_in_core_count " << neuron_in_core_count << endl;
-//                        int w_index = 0;
-//                        for (int i = 0; i < in_layer_size; ++i) {
-//                                float w = read(SHARED_MEMORY_OFFSET + 2 + input_size + 1 + weight_size + (weights_layers[j]*i) + (core_i*neuron_in_core_count));
-//                                cout << "w" << i << ": " << w << endl;
-//                                cout << "addr " << first_address + service_info_count + (w_index * 2) + 1 << endl;
-//                                write(first_address + service_info_count + (w_index * 2) + 1, w);
-//                                w_index++;
-//                        }
-//                    }
-//                }
-//                write(0x100, 1);
+                for (int core_i = 0; core_i < PE_CORE; ++core_i) {
+                    for (int j = 0; j < input_size; ++j) {
+                        float in = read(SHARED_MEMORY_OFFSET + 2 + j);
+                        cout << "in " << in << endl;
+                        int first_address = 0x1000*(core_i + 1);
+                        write(first_address+service_info+((j*2)-1), in);
+                    }
+                }
+                stage = ControlUnitStage::START_CORES;
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::START_CORES) {
+                write(0x100, 1);
                 bus_addr.write(111);
                 bus_wr.write(false);
                 bus_rd.write(false);
