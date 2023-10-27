@@ -140,8 +140,8 @@ SC_MODULE(PeCore) {
                     continue;
                 }
                 if (stage == ProcessingStage::CALCULATE){
-//                    for (int i = 0; i < group_count; ++i) {
-                    for (int i = 0; i < 1; ++i) {
+                    for (int i = 0; i < group_count; ++i) {
+//                    for (int i = 0; i < 1; ++i) {
                         math_reset.write(true);
                         math_enable.write(false);
                         wait();
