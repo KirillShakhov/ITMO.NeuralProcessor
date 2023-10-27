@@ -14,7 +14,7 @@ SC_MODULE(SharedMemory) {
         if (bus_addr.read() >= OFFSET) {
             int address = bus_addr.read() - OFFSET;
             if (bus_rd.read() != 0) {
-                cout << "Shared Memory Read Addr: " << address << " Data: " << mem[address] << endl;
+//                cout << "Shared Memory Read Addr: " << address << " Data: " << mem[address] << endl;
                 bus_data_out.write(mem[address]);
             }
             if (bus_wr.read() != 0) {

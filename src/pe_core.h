@@ -166,10 +166,10 @@ SC_MODULE(PeCore) {
                         while (math_busy.read()) {
                             wait();
                         }
-//                        lm_write(res_addr, math_output.read());
+                        lm_write(res_addr, math_output.read());
                         cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                         stage = ProcessingStage::IDLE;
-//                        send_data_to_pe_cores(math_output.read());
+                        send_data_to_pe_cores(math_output.read());
                     }
                     wait();
                     continue;
@@ -232,7 +232,7 @@ SC_MODULE(PeCore) {
 
     void send_data_to_pe_cores(float data){
         sn_wr.write(true);
-        sn_index.write(0);
+        sn_index.write(neuron_index);
         sn_data.write(data);
     }
 
