@@ -26,9 +26,9 @@ SC_MODULE(LocalMemory) {
             }
         }
         if (wr) {
-//            for (int i = 0; i < 50; ++i) {
-//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-//            }
+            for (int i = 0; i < 20; ++i) {
+                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+            }
 //            cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
             if (single_channel){
                 mem[address.read()] = data_in[0].read();
