@@ -52,10 +52,12 @@ SC_MODULE(PeCore) {
 
     // Internal state variables
     ProcessingStage stage;
-    int neuron_index;
+    int layers_count;
+    int input_count;
+    int group_count;
+    int group_index;
     sc_uint<ADDR_BITS> res_addr;
     int size;
-    int neurons_count;
 
     // Constructor
     SC_CTOR(PeCore) : neuralMath("neuralMath") {
@@ -119,22 +121,22 @@ SC_MODULE(PeCore) {
                 if (stage == ProcessingStage::READ_DATA_SEND_ADDR){
                     cout << "READ_DATA_SEND_ADDR" << endl;
                     auto results = lm_read(0);
-                    neuron_index = results[0];
-                    res_addr = results[1];
-                    size = results[2];
-                    neurons_count = results[3];
-                    cout << "neuron_index " << neuron_index << endl;
-                    cout << "res_addr " << res_addr << endl;
-                    cout << "size " << size << endl;
-                    cout << "neurons_count " << neurons_count << endl;
-                    stage = ProcessingStage::CALCULATE;
+                    layers_count = results[0];
+                    input_count = results[1];
+                    group_count = results[2];
+                    group_index = results[3];
+                    cout << "layers_count " << layers_count << endl;
+                    cout << "input_count " << input_count << endl;
+                    cout << "group_count " << group_count << endl;
+                    cout << "group_index " << group_index << endl;
+                    stage = ProcessingStage::IDLE;
                     wait();
                     continue;
                 }
                 if (stage == ProcessingStage::CALCULATE){
                     math_reset.write(false);
                     math_enable.write(true);
-                    for (int i = 0; i < neurons_count; ++i) {
+                    for (int i = 0; i < group_count; ++i) {
                         int temp_size = 0;
                         while (temp_size < (size*2)) {
                             const int addr = 4+(temp_size);
@@ -232,7 +234,7 @@ SC_MODULE(PeCore) {
 
     void send_data_to_pe_cores(float data){
         sn_wr.write(true);
-        sn_index.write(neuron_index);
+        sn_index.write(group_index);
         sn_data.write(data);
     }
 

@@ -17,18 +17,18 @@ SC_MODULE(LocalMemory) {
     void proc(){
         if (!enable) return;
         if (rd) {
-            for (int i = 0; i < 50; ++i) {
-                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-            }
+//            for (int i = 0; i < 50; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
 
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 data_out[i].write(mem[address.read()+i]);
             }
         }
         if (wr) {
-            for (int i = 0; i < 50; ++i) {
-                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-            }
+//            for (int i = 0; i < 50; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
 //            cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
             if (single_channel){
                 mem[address.read()] = data_in[0].read();
