@@ -103,12 +103,18 @@ SC_MODULE(ControlUnit) {
                     cout << "weight_size " << weight_size << endl;
                     write(getFirstAddressCore(i), weight_size);
                 }
+                service_info += weight_size*4;
                 for (int j = 0; j < weight_size; ++j) {
-                    service_info++;
                     for (int i = 0; i < PE_CORE; ++i) {
-
-                        cout << "wl " << get_layer_weight_count(i) << endl;
-                        write(getFirstAddressCore(i), weights_layers[i]);
+                        int input_count = get_layer_weight_count(j)/weights_layers[j];
+                        write(getFirstAddressCore(i)+1+(j*4), input_count);
+                        cout << "input_count " << input_count << endl;
+                        int group_count = (weights_layers[j] + PE_CORE - 1) / PE_CORE;
+                        write(getFirstAddressCore(i)+1+1+(j*4), group_count);
+                        cout << "group_count " << group_count << endl;
+                        int index_neuron = group_count*i;
+                        cout << "neuron_index " << index_neuron << endl;
+                        write(getFirstAddressCore(i)+1+2+(j*4), index_neuron);
                     }
                 }
 
@@ -145,7 +151,8 @@ SC_MODULE(ControlUnit) {
                     offsetCores[coreIndex]++;
                     int offset = offsetCores[coreIndex];
                     cout << "offset " << offset << endl;
-                    write(offset, weight);
+                    cout << "service_info " << service_info << endl;
+                    write(service_info+offset, weight);
 
                     // Увеличить общее количество обработанных весов
                     totalWeightsProcessed++;
