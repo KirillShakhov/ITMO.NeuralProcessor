@@ -168,7 +168,7 @@ SC_MODULE(PeCore) {
 
                         auto data_from_memory = lm_read(addr);
                         for (int j = 0; j < data_from_memory.size(); ++j) {
-                            cout << "data_from_memory[" << j << "] " << data_from_memory[j] << endl;
+                            cout << "data_from_memory[" << addr+j << "] " << data_from_memory[j] << endl;
                         }
                         for (int k = 0; k < (POCKET_SIZE/2); ++k) {
                             cout << "k " << (k * 2) + 1 << endl;
@@ -200,8 +200,8 @@ SC_MODULE(PeCore) {
 
                     cout << "test data_offset" << data_offset << endl;
                     cout << "test (2*group_count*input_count)" << (2*group_count*input_count) << endl;
-                    cout << "test (current_group*2)" << (current_group*2) << endl;
-                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + data_offset + (2*group_count*input_count) + (current_group*2);
+                    cout << "test (group_index)" << (group_index) << endl;
+                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + data_offset + (2*group_count*input_count) + (index_calc*POCKET_SIZE) + (index_core*2);
                     cout << "test data_math " << math_output.read() << endl;
                     cout << "test addr_math " << addr << endl;
 
