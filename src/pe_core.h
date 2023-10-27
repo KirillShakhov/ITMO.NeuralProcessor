@@ -4,6 +4,7 @@
 
 enum class ProcessingStage {
     START,
+    GET_LAYER_SIZE,
     READ_DATA_SEND_ADDR,
     COMPUTE_WAIT,
     WRITE_RESULT,
@@ -57,7 +58,6 @@ SC_MODULE(PeCore) {
     int group_count;
     int group_index;
     sc_uint<ADDR_BITS> res_addr;
-    int size;
 
     // Constructor
     SC_CTOR(PeCore) : neuralMath("neuralMath") {
@@ -114,50 +114,68 @@ SC_MODULE(PeCore) {
                     busy = true;
                     math_reset.write(true);
                     math_enable.write(false);
+                    stage = ProcessingStage::GET_LAYER_SIZE;
+                    wait();
+                    continue;
+                }
+                if (stage == ProcessingStage::GET_LAYER_SIZE){
+                    auto results = lm_read(0);
+                    layers_count = results[0];
+                    cout << "layers_count " << layers_count << endl;
                     stage = ProcessingStage::READ_DATA_SEND_ADDR;
                     wait();
                     continue;
                 }
                 if (stage == ProcessingStage::READ_DATA_SEND_ADDR){
                     cout << "READ_DATA_SEND_ADDR" << endl;
-                    auto results = lm_read(0);
-                    layers_count = results[0];
-                    input_count = results[1];
-                    group_count = results[2];
-                    group_index = results[3];
-                    cout << "layers_count " << layers_count << endl;
+                    auto results = lm_read(1);
+                    input_count = results[0];
+                    group_count = results[1];
+                    group_index = results[2];
                     cout << "input_count " << input_count << endl;
                     cout << "group_count " << group_count << endl;
                     cout << "group_index " << group_index << endl;
-                    stage = ProcessingStage::IDLE;
+                    stage = ProcessingStage::CALCULATE;
                     wait();
                     continue;
                 }
                 if (stage == ProcessingStage::CALCULATE){
-                    math_reset.write(false);
-                    math_enable.write(true);
                     for (int i = 0; i < group_count; ++i) {
+                        math_reset.write(true);
+                        math_enable.write(false);
+                        wait();
+                        math_reset.write(false);
+                        math_enable.write(true);
+
                         int temp_size = 0;
-                        while (temp_size < (size*2)) {
-                            const int addr = 4+(temp_size);
-                            cout << "size "<< size << endl;
-                            cout << "read_ddd "<< addr << endl;
-                            cout << "POCKET_SIZE "<< POCKET_SIZE << endl;
-                            auto results = lm_read(addr);
+                        while (temp_size < (input_count*2+7)) {
+                            const int addr = 1+(layers_count*3)+(i*(input_count*2))+(temp_size);
+                            cout << "input_count "<< input_count << endl;
+                            cout << "temp_size "<< temp_size << endl;
+                            cout << "addr "<< addr << endl;
+                            cout << "offset_m "<< (i*(input_count*2)) << endl;
+
+                            auto data_from_memory = lm_read(addr);
+                            for (int j = 0; j < data_from_memory.size(); ++j) {
+                                cout << "data_from_memory[" << j << "] " << data_from_memory[j] << endl;
+                            }
                             for (int k = 0; k < (POCKET_SIZE/2); ++k) {
-                                if ((k * 2) + 1 <= size) {
-                                    cout << "math_inputs["<< index_core <<"]("<<addr + (k * 2)<<"): " << results[k * 2] << endl;
-                                    cout << "math_weights["<< index_core <<"]("<<addr + (k * 2) + 1<<"): " << results[(k * 2) + 1] << endl;
-                                    math_inputs[k].write(results[k * 2]);
-                                    math_weights[k].write(results[(k * 2) + 1]);
+                                cout << "k " << (k * 2) + 1 << endl;
+                                if ((temp_size/2)+k < input_count) {
+                                    cout << "math_inputs["<< index_core <<"]("<<(temp_size/2)+k<<"): " << data_from_memory[k * 2] << endl;
+                                    cout << "math_weights["<< index_core <<"]("<<(temp_size/2)+k<<"): " << data_from_memory[(k * 2) + 1] << endl;
+                                    math_inputs[k].write(data_from_memory[k * 2]);
+                                    math_weights[k].write(data_from_memory[(k * 2) + 1]);
                                 }
                                 else{
+                                    cout << "math_inputs["<< index_core <<"]("<<(temp_size/2)+k<<"): " << 0 << endl;
+                                    cout << "math_weights["<< index_core <<"]("<<(temp_size/2)+k<<"): " << 0 << endl;
                                     math_inputs[k].write(0);
                                     math_weights[k].write(0);
                                 }
                             }
-                            temp_size = temp_size + POCKET_SIZE;
-                            cout << "temp_size "<< temp_size << endl;
+                            temp_size += POCKET_SIZE;
+                            cout << "POCKET_SIZE " << POCKET_SIZE << endl;
                         }
                         wait();
                         for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
@@ -168,10 +186,10 @@ SC_MODULE(PeCore) {
                         while (math_busy.read()) {
                             wait();
                         }
-                        lm_write(res_addr, math_output.read());
+//                        lm_write(res_addr, math_output.read());
                         cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                         stage = ProcessingStage::IDLE;
-                        send_data_to_pe_cores(math_output.read());
+//                        send_data_to_pe_cores(math_output.read());
                     }
                     wait();
                     continue;
@@ -195,8 +213,8 @@ SC_MODULE(PeCore) {
             math_inputs[i].write(local_memory_data_bi[i * 2].read());
             math_weights[i].write(local_memory_data_bi[(i * 2) + 1].read());
         }
-        size -= POCKET_SIZE / 2;
-        if (size <= 0) {
+        input_count -= POCKET_SIZE / 2;
+        if (input_count <= 0) {
             stage = ProcessingStage::COMPUTE_WAIT;
         }
     }

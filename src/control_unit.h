@@ -40,7 +40,7 @@ SC_MODULE(ControlUnit) {
             bus_rd.write(false);
             if (stage == ControlUnitStage::GET_CONFIG) {
                 result_addr = read(SHARED_MEMORY_OFFSET);
-                input_size = read(SHARED_MEMORY_OFFSET+1);
+                input_size = read(SHARED_MEMORY_OFFSET + 1);
                 cout << "result_addr: " << result_addr << endl;
                 cout << "input_size: " << input_size << endl;
                 weight_size = read(SHARED_MEMORY_OFFSET + 2 + input_size);
@@ -58,12 +58,12 @@ SC_MODULE(ControlUnit) {
 
 
                 int current_core = 0;
-                cout << "get_layer_size() " <<  get_layer_size() << endl;
+                cout << "get_layer_size() " << get_layer_size() << endl;
                 for (int layer_index = 0; layer_index < get_layer_size(); ++layer_index) {
-                    cout << "wright_count " <<  get_layer_weight_count(layer_index) << endl;
-                    int weights_per_count = get_layer_weight_count(layer_index)/PE_CORE;
-                    cout << "weights_per_count " <<  weights_per_count << endl;
-                    cout << "groups " <<  weights_layers[layer_index] << endl;
+                    cout << "wright_count " << get_layer_weight_count(layer_index) << endl;
+                    int weights_per_count = get_layer_weight_count(layer_index) / PE_CORE;
+                    cout << "weights_per_count " << weights_per_count << endl;
+                    cout << "groups " << weights_layers[layer_index] << endl;
 
                 }
 
@@ -76,20 +76,20 @@ SC_MODULE(ControlUnit) {
                     cout << "weight_size " << weight_size << endl;
                     write(getFirstAddressCore(i), weight_size);
                 }
-                service_info = weight_size*3;
+                service_info = weight_size * 3;
                 for (int j = 0; j < weight_size; ++j) {
                     for (int i = 0; i < PE_CORE; ++i) {
-                        int input_count = get_layer_weight_count(j)/weights_layers[j];
-                        write(getFirstAddressCore(i)+1+(j*3), input_count);
+                        int input_count = get_layer_weight_count(j) / weights_layers[j];
+                        write(getFirstAddressCore(i) + 1 + (j * 3), input_count);
                         cout << "input_count " << input_count << endl;
 
                         int group_count = (weights_layers[j] + PE_CORE - 1) / PE_CORE;
-                        write(getFirstAddressCore(i)+1+1+(j*3), group_count);
+                        write(getFirstAddressCore(i) + 1 + 1 + (j * 3), group_count);
                         cout << "group_count " << group_count << endl;
 
-                        int index_neuron = group_count*i;
+                        int index_neuron = group_count * i;
                         cout << "neuron_index " << index_neuron << endl;
-                        write(getFirstAddressCore(i)+1+2+(j*3), index_neuron);
+                        write(getFirstAddressCore(i) + 1 + 2 + (j * 3), index_neuron);
                     }
                 }
 
@@ -122,12 +122,13 @@ SC_MODULE(ControlUnit) {
 //                     Теперь у вас есть `weight`, который относится к `layerIndex` слою и может быть внутри одной из `groupIndex` групп весов.
 
 
-                    cout << "w" << i << ": " << weight << " layer: " << layerIndex << " group: " << groupIndex << " core: " << coreIndex << endl;
+                    cout << "w" << i << ": " << weight << " layer: " << layerIndex << " group: " << groupIndex
+                         << " core: " << coreIndex << endl;
                     offsetCores[coreIndex]++;
                     int offset = offsetCores[coreIndex];
                     cout << "offset " << offset << endl;
-                    int first_address = 0x1000*(coreIndex + 1);
-                    write(first_address+service_info+(offset*2), weight);
+                    int first_address = 0x1000 * (coreIndex + 1);
+                    write(first_address + service_info + (offset * 2), weight);
 
                     // Увеличить общее количество обработанных весов
                     totalWeightsProcessed++;
@@ -140,14 +141,21 @@ SC_MODULE(ControlUnit) {
 
                 cout << "service_info " << service_info << endl;
 
-                for (int core_i = 0; core_i < PE_CORE; ++core_i) {
-                    for (int j = 0; j < input_size; ++j) {
-                        float in = read(SHARED_MEMORY_OFFSET + 2 + j);
-                        cout << "in " << in << endl;
-                        int first_address = 0x1000*(core_i + 1);
-                        write(first_address+service_info+((j*2)-1), in);
+                int group_count = weights_layers[0] / PE_CORE;
+                for (int i = 0; i < input_size; ++i) {
+                    float in = read(SHARED_MEMORY_OFFSET + 2 + i);
+                    cout << "in " << in << endl;
+                    for (int core_i = 0; core_i < PE_CORE; ++core_i) {
+                        int first_address = 0x1000 * (core_i + 1);
+                        for (int j = 0; j < group_count; ++j) {
+                            int addr = first_address + service_info + (j * input_size) + (i * 2);
+                            cout << "group_count " << group_count << endl;
+                            cout << "in_addr " << addr << endl;
+                            write(addr, in);
+                        }
                     }
                 }
+
                 stage = ControlUnitStage::START_CORES;
                 wait();
                 continue;
@@ -169,7 +177,7 @@ SC_MODULE(ControlUnit) {
         }
     }
 
-    int get_all_weight(){
+    int get_all_weight() {
         int all_weight = 0;
         int last_layer = input_size;
         for (int i = 0; i < weight_size; ++i) {
@@ -179,26 +187,26 @@ SC_MODULE(ControlUnit) {
         return all_weight;
     }
 
-    int getFirstAddressCore(int core_i){
-        return 0x1000*(core_i + 1);
+    int getFirstAddressCore(int core_i) {
+        return 0x1000 * (core_i + 1);
     }
 
-    int get_layer_size(){
+    int get_layer_size() {
         return weight_size;
     }
 
-    int get_layer_weight_count(int layer_index){
-        if (layer_index == 0){
-            return input_size*weights_layers[0];
+    int get_layer_weight_count(int layer_index) {
+        if (layer_index == 0) {
+            return input_size * weights_layers[0];
         }
-        return weights_layers[layer_index-1]*weights_layers[layer_index];
+        return weights_layers[layer_index - 1] * weights_layers[layer_index];
     }
 
-    int get_group_count(int layer_index){
+    int get_group_count(int layer_index) {
         return weights_layers[layer_index];
     }
 
-    float read(sc_uint<ADDR_BITS> addr){
+    float read(sc_uint<ADDR_BITS> addr) {
         bus_addr.write(addr);
         bus_rd.write(true);
         bus_wr.write(false);
@@ -208,7 +216,7 @@ SC_MODULE(ControlUnit) {
         return bus_data_out.read();
     }
 
-    void write(sc_uint<ADDR_BITS> addr, float data){
+    void write(sc_uint<ADDR_BITS> addr, float data) {
         bus_addr.write(addr);
         bus_data_in.write(data);
         bus_rd.write(false);
