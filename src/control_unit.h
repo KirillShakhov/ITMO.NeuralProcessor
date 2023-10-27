@@ -145,14 +145,16 @@ SC_MODULE(ControlUnit) {
                 for (int i = 0; i < input_size; ++i) {
                     float in = read(SHARED_MEMORY_OFFSET + 2 + i);
                     cout << "in " << in << endl;
-                    for (int core_i = 0; core_i < PE_CORE; ++core_i) {
-                        int first_address = 0x1000 * (core_i + 1);
-                        for (int j = 0; j < group_count; ++j) {
-                            int addr = first_address + service_info + (j * input_size) + (i * 2);
+                    int offset_in_addr = 0;
+                    for (int j = 0; j < group_count; ++j) {
+                        for (int core_i = 0; core_i < PE_CORE; ++core_i) {
+                            int first_address = 0x1000 * (core_i + 1);
+                            int addr = first_address + service_info + 1 + offset_in_addr + (i*2);
                             cout << "group_count " << group_count << endl;
                             cout << "in_addr " << addr << endl;
                             write(addr, in);
                         }
+                        offset_in_addr += (49 * 2);
                     }
                 }
 
