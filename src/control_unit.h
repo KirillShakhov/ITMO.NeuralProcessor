@@ -98,7 +98,7 @@ SC_MODULE(ControlUnit) {
                 int totalWeightsProcessed = 0; // Общее количество обработанных весов
                 int layerIndex = 0; // Индекс текущего слоя
 
-                int service_info = 1;
+                int service_info = 0;
                 for (int i = 0; i < PE_CORE; ++i) {
                     cout << "weight_size " << weight_size << endl;
                     write(getFirstAddressCore(i), weight_size);
@@ -154,7 +154,8 @@ SC_MODULE(ControlUnit) {
                     int offset = offsetCores[coreIndex];
                     cout << "offset " << offset << endl;
                     cout << "service_info " << service_info << endl;
-                    write(service_info+offset, weight);
+                    int first_address = 0x1000*(coreIndex + 1);
+                    write(first_address+service_info+(offset*2), weight);
 
                     // Увеличить общее количество обработанных весов
                     totalWeightsProcessed++;
