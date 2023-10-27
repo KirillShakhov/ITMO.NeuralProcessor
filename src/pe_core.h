@@ -160,7 +160,7 @@ SC_MODULE(PeCore) {
                     int temp_size = 0;
                     while (temp_size < (input_count*2+7)) {
                         cout << "data_offset " << data_offset << endl;
-                        const int addr = 1+(layers_count*3)+data_offset+(index_calc*(input_count*2))+(temp_size);
+                        const int addr = 1+(layers_count*3)+(data_offset*2)+(index_calc*(input_count*2))+(temp_size);
                         cout << "input_count "<< input_count << endl;
                         cout << "temp_size "<< temp_size << endl;
                         cout << "addr "<< addr << endl;
@@ -201,11 +201,11 @@ SC_MODULE(PeCore) {
                     cout << "test data_offset" << data_offset << endl;
                     cout << "test (2*group_count*input_count)" << (2*group_count*input_count) << endl;
                     cout << "test (group_index)" << (group_index) << endl;
-                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + data_offset + (2*group_count*input_count) + (index_calc*POCKET_SIZE) + (index_core*2);
+                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (data_offset) + (2*group_count*input_count) + (index_calc*POCKET_SIZE) + (index_core*2);
                     cout << "test data_math " << math_output.read() << endl;
                     cout << "test addr_math " << addr << endl;
 
-                    lm_write(res_addr, math_output.read());
+                    lm_write(addr, math_output.read());
                     cout << "Result ADDR "<< addr << endl;
                     cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
                     send_data_to_pe_cores(addr,math_output.read());
@@ -215,8 +215,8 @@ SC_MODULE(PeCore) {
                         continue;
                     }
 
-                    stage = ProcessingStage::WAIT_DATA;
                     data_offset += group_count*input_count;
+                    stage = ProcessingStage::WAIT_DATA;
                     wait();
                     continue;
                 }
