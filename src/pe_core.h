@@ -8,6 +8,7 @@ enum class ProcessingStage {
     READ_DATA_SEND_ADDR,
     COMPUTE_WAIT,
     WRITE_RESULT,
+    WAIT_DATA,
     NEW,
     CALCULATE,
     IDLE
@@ -53,6 +54,7 @@ SC_MODULE(PeCore) {
 
     // Internal state variables
     ProcessingStage stage;
+    int current_layers;
     int layers_count;
     int input_count;
     int group_count;
@@ -79,7 +81,7 @@ SC_MODULE(PeCore) {
     }
 
     bool enable;
-    bool busy;
+    int current_group;
     // Core processing method
     void core_process() {
         while (true) {  // Infinite loop for the thread
@@ -109,9 +111,9 @@ SC_MODULE(PeCore) {
                 stage = ProcessingStage::START;
             }
             read_data_to_pe_cores();
+            sn_wr.write(false);
             if (enable) {
                 if (stage == ProcessingStage::START){
-                    busy = true;
                     math_reset.write(true);
                     math_enable.write(false);
                     stage = ProcessingStage::GET_LAYER_SIZE;
@@ -121,6 +123,7 @@ SC_MODULE(PeCore) {
                 if (stage == ProcessingStage::GET_LAYER_SIZE){
                     auto results = lm_read(0);
                     layers_count = results[0];
+                    current_layers = 0;
                     cout << "layers_count " << layers_count << endl;
                     stage = ProcessingStage::READ_DATA_SEND_ADDR;
                     wait();
@@ -128,7 +131,12 @@ SC_MODULE(PeCore) {
                 }
                 if (stage == ProcessingStage::READ_DATA_SEND_ADDR){
                     cout << "READ_DATA_SEND_ADDR" << endl;
-                    auto results = lm_read(1);
+                    cout << "current_layers " << current_layers << endl;
+                    cout << "addr " << 1+(current_layers*3) << endl;
+                    auto results = lm_read(1+(current_layers*3));
+                    for (int i = 0; i < results.size(); ++i) {
+                        cout << "results " << results[i] << endl;
+                    }
                     input_count = results[0];
                     group_count = results[1];
                     group_index = results[2];
@@ -141,6 +149,7 @@ SC_MODULE(PeCore) {
                 }
                 if (stage == ProcessingStage::CALCULATE){
                     for (int i = 0; i < group_count; ++i) {
+                        current_group = group_index+i;
 //                    for (int i = 0; i < 1; ++i) {
                         math_reset.write(true);
                         math_enable.write(false);
@@ -187,10 +196,37 @@ SC_MODULE(PeCore) {
                         while (math_busy.read()) {
                             wait();
                         }
-//                        lm_write(res_addr, math_output.read());
+
+                        sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (input_count*group_count) + (current_group*2);
+
+                        lm_write(res_addr, math_output.read());
+                        cout << "Result ADDR "<< addr << endl;
                         cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
+                        send_data_to_pe_cores(addr,math_output.read());
+
+                        stage = ProcessingStage::WAIT_DATA;
+                    }
+                    wait();
+                    continue;
+                }
+                if (stage == ProcessingStage::WAIT_DATA){
+                    bool is_wait = false;
+                    for (const auto & j : sn_wr_i) {
+                        if (j.read()){
+                            is_wait = true;
+                        }
+                    }
+                    if (busy_write_data || is_wait || sn_wr){
+                        wait();
+                        continue;
+                    }
+                    cout << "go next" << endl;
+                    if (current_layers > layers_count) {
                         stage = ProcessingStage::IDLE;
-//                        send_data_to_pe_cores(math_output.read());
+                    }
+                    else{
+//                        stage = ProcessingStage::READ_DATA_SEND_ADDR;
+                        stage = ProcessingStage::IDLE;
                     }
                     wait();
                     continue;
@@ -204,71 +240,43 @@ SC_MODULE(PeCore) {
         }
     }
 
-
-    void compute_set() {
-        cout << "COMPUTE_SET" << endl;
-        local_memory_enable.write(true);
-        local_memory_rd.write(true);
-        local_memory_addr.write(local_memory_addr.read() + POCKET_SIZE);
-        for (int i = 0; i < (POCKET_SIZE / 2); ++i) {
-            math_inputs[i].write(local_memory_data_bi[i * 2].read());
-            math_weights[i].write(local_memory_data_bi[(i * 2) + 1].read());
-        }
-        input_count -= POCKET_SIZE / 2;
-        if (input_count <= 0) {
-            stage = ProcessingStage::COMPUTE_WAIT;
-        }
-    }
-
-    void compute_wait() {
-        cout << "COMPUTE_WAIT" << endl;
-        for (int i = 0; i < (POCKET_SIZE / 2); ++i) {
-            math_inputs[i].write(0);
-            math_weights[i].write(0);
-        }
-        math_enable.write(false);
-        if (!math_busy.read()) {
-            stage = ProcessingStage::WRITE_RESULT;
-        }
-    }
-
-    void write_result() {
-        cout << "WRITE_RESULT " << math_output.read() << endl;
-        local_memory_enable.write(true);
-        local_memory_rd.write(false);
-        local_memory_wr.write(true);
-        local_memory_addr.write(res_addr);
-        local_memory_data_bo[0].write(math_output.read());
-        send_data_to_pe_cores(math_output.read());
-        stage = ProcessingStage::NEW;
-    }
-
+    bool busy_write_data;
     void read_data_to_pe_cores(){
+        busy_write_data = true;
+        std::vector<sc_uint<ADDR_BITS>> addr_vec;
+        std::vector<float> data_vec;
         for (int i = 0; i < (PE_CORES-1); ++i) {
             if (sn_wr_i[i].read()){
                 cout << "read_data_to_pe_cores " << sn_data_i[i].read() << endl;
+                cout << "sn_index_i " << sn_index_i[i].read() << endl;
+//                lm_write(sn_index_i[i].read(),sn_data_i[i].read());
+                addr_vec.push_back(sn_index_i[i].read());
+                data_vec.push_back(sn_data_i[i].read());
             }
         }
+        for (int i = 0; i < addr_vec.size(); ++i) {
+            lm_write(addr_vec[i],data_vec[i]);
+        }
+        busy_write_data = false;
     }
 
-    void send_data_to_pe_cores(float data){
+    void send_data_to_pe_cores(sc_uint<ADDR_BITS> index,float data){
         sn_wr.write(true);
-        sn_index.write(group_index);
+        sn_index.write(index);
         sn_data.write(data);
     }
 
-    void new_stage() {
-        local_memory_enable.write(false);
-        local_memory_rd.write(false);
-        local_memory_wr.write(true);
-    }
-
-    void lm_write(sc_uint<ADDR_BITS> addr, float data){
+    void lm_write(sc_uint<ADDR_BITS> addr_wr, float data_wr){
         local_memory_enable.write(true);
         local_memory_rd.write(false);
         local_memory_wr.write(true);
-        local_memory_addr.write(res_addr);
-        local_memory_data_bo[0].write(math_output.read());
+        local_memory_addr.write(addr_wr);
+        local_memory_single_channel.write(true);
+        local_memory_data_bo[0].write(data_wr);
+        wait();
+        local_memory_enable.write(false);
+        local_memory_wr.write(false);
+        local_memory_single_channel.write(false);
     }
 
     std::vector<float> lm_read(sc_uint<ADDR_BITS> addr){

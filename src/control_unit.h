@@ -154,7 +154,7 @@ SC_MODULE(ControlUnit) {
                             cout << "in_addr " << addr << endl;
                             write(addr, in);
                         }
-                        offset_in_addr += (49 * 2);
+                        offset_in_addr += (input_size * 2);
                     }
                 }
 
