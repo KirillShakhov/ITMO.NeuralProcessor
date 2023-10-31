@@ -10,8 +10,8 @@ template<int ADDR_BITS, int DATA_BITS, int PE_CORES, int POCKET_SIZE>
 SC_MODULE(NeuralProcessor) {
     sc_in<bool> clk_i;
 
-    std::vector<PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE, PE_CORES>*> cores;
-    std::vector<LocalMemory<ADDR_BITS, DATA_BITS, POCKET_SIZE>*> local_memories;
+    std::vector<PeCore<ADDR_BITS, POCKET_SIZE, PE_CORES>*> cores;
+    std::vector<LocalMemory<ADDR_BITS, POCKET_SIZE>*> local_memories;
 
     sc_vector<sc_signal<bool>> local_memory_enable{"local_memory_enable", PE_CORES};
     sc_vector<sc_signal<sc_uint<ADDR_BITS>>> local_memory_addr{"local_memory_addr", PE_CORES};
@@ -44,7 +44,7 @@ SC_MODULE(NeuralProcessor) {
 
     IoModule<ADDR_BITS> ioModule{"IoModule"};
     ControlUnit<ADDR_BITS, SHARED_MEMORY_OFFSET, PE_CORES> controlUnit{"ControlUnit"};
-    SharedMemory<ADDR_BITS, DATA_BITS, SHARED_MEMORY_OFFSET> sharedMemory{"SharedMemory"};
+    SharedMemory<ADDR_BITS, SHARED_MEMORY_OFFSET> sharedMemory{"SharedMemory"};
     BusMultiplexer<ADDR_BITS, 0x10> busMultiplexer{"busMultiplexer"};
 
     std::vector<sc_signal<bool>*> sn_wr;
@@ -88,8 +88,8 @@ SC_MODULE(NeuralProcessor) {
         }
 
         for (int i = 0; i < PE_CORES; ++i) {
-            cores.push_back(new PeCore<ADDR_BITS, DATA_BITS, POCKET_SIZE, PE_CORES>(("core" + std::to_string(i)).c_str()));
-            local_memories.push_back(new LocalMemory<16, DATA_BITS, POCKET_SIZE>(("local_memory" + std::to_string(i)).c_str()));
+            cores.push_back(new PeCore<ADDR_BITS, POCKET_SIZE, PE_CORES>(("core" + std::to_string(i)).c_str()));
+            local_memories.push_back(new LocalMemory<16, POCKET_SIZE>(("local_memory" + std::to_string(i)).c_str()));
 
 
             local_memories[i]->clk(clk_i);

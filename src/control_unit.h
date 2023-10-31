@@ -6,6 +6,7 @@ enum class ControlUnitStage {
     SEND_INPUTS,
     SEND_WEIGHTS,
     START_CORES,
+    WAIT_RESULTS,
     IDLE
 };
 
@@ -163,11 +164,18 @@ SC_MODULE(ControlUnit) {
                 continue;
             }
             if (stage == ControlUnitStage::START_CORES) {
-                write(0x100, 1);
+                write(0xFFF, 1);
                 bus_addr.write(111);
                 bus_wr.write(false);
                 bus_rd.write(false);
-                stage = ControlUnitStage::IDLE;
+                stage = ControlUnitStage::WAIT_RESULTS;
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::WAIT_RESULTS) {
+                float is_free = read(0x2011);
+                cout << "is_free " << is_free << endl;
+                stage = ControlUnitStage::WAIT_RESULTS;
                 wait();
                 continue;
             }

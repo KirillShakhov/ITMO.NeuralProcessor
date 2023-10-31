@@ -6,16 +6,11 @@ enum class ProcessingStage {
     START,
     GET_LAYER_SIZE,
     READ_DATA_SEND_ADDR,
-    COMPUTE_WAIT,
-    WRITE_RESULT,
-    SEND_RESULTS,
-    WAIT_DATA,
-    NEW,
     CALCULATE,
     IDLE
 };
 
-template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE, int PE_CORES>
+template<int ADDR_BITS, int POCKET_SIZE, int PE_CORES>
 SC_MODULE(PeCore) {
     // Input ports
     sc_in_clk clk_i;
@@ -83,7 +78,7 @@ SC_MODULE(PeCore) {
 
     bool enable;
     // Core processing method
-    int data_offset = 0;
+    int data_offset;
     void core_process() {
         while (true) {  // Infinite loop for the thread
             local_memory_enable.write(false);
@@ -94,22 +89,36 @@ SC_MODULE(PeCore) {
 
             // load data
             if ((bus_addr.read() >= (0x1000*(index_core+1))) && (bus_addr.read() <= (0x1000*(index_core+1))+0xFFF)) {
+                auto lm_addr = bus_addr.read() - (0x1000 * (index_core + 1));
+                cout << "lm_addr " << lm_addr << endl;
                 if (bus_wr) {
-                    local_memory_addr.write(bus_addr.read() - (0x1000 * (index_core + 1)));
+                    local_memory_addr.write(lm_addr);
                     local_memory_enable.write(true);
                     local_memory_wr.write(true);
                     local_memory_single_channel.write(true);
                     local_memory_data_bo[0].write(bus_data_in.read());
+                }
+                if (bus_rd) {
+                    local_memory_addr.write(lm_addr);
+                    local_memory_enable.write(true);
+                    local_memory_rd.write(true);
+                    wait();
+                    float res = local_memory_data_bi[0].read();
+                    bus_data_out.write(res);
                 }
                 wait();  // Pause and wait for next trigger
                 continue;
             }
 
             // start
-            if (bus_addr.read() == 0x100 && bus_wr.read()) {
+            if ((bus_addr.read() == 0xFFF || bus_addr.read() == (0x100*(index_core+1)))&& bus_wr.read()) {
                 cout << "start core: " <<  index_core << endl;
                 enable = true;
                 stage = ProcessingStage::START;
+            }
+            // free flag
+            if (bus_addr.read() == ((0x100*(index_core+1))+0xFF)&& bus_wr.read()) {
+
             }
             read_data_to_pe_cores();
             sn_wr.write(false);
@@ -142,7 +151,6 @@ SC_MODULE(PeCore) {
                     cout << "input_count1 " << input_count << endl;
                     cout << "group_count " << group_count << endl;
                     cout << "group_index " << group_index << endl;
-//                    index_calc = 0;
                     stage = ProcessingStage::CALCULATE;
                     wait();
                     continue;
@@ -239,36 +247,13 @@ SC_MODULE(PeCore) {
         }
     }
 
-//    void waitTransfer(){
-//        bool is_wait;
-//        do {
-//            read_data_to_pe_cores();
-//
-//            is_wait = false;
-//            for (const auto &j: sn_wr_i) {
-//                if (j.read()) {
-//                    is_wait = true;
-//                }
-//            }
-//            if (busy_write_data || sn_wr) {
-//                is_wait = true;
-//            }
-//            if (is_wait) {
-//                wait();
-//            }
-//        } while (is_wait);
-//    }
-
-    bool busy_write_data;
     void read_data_to_pe_cores(){
-        busy_write_data = true;
         std::vector<sc_uint<ADDR_BITS>> addr_vec;
         std::vector<float> data_vec;
         for (int i = 0; i < (PE_CORES-1); ++i) {
             if (sn_wr_i[i].read()){
                 cout << "sn_index_i " << sn_index_i[i].read() << endl;
                 cout << "read_data_to_pe_cores " << sn_data_i[i].read() << endl;
-//                lm_write(sn_index_i[i].read(),sn_data_i[i].read());
                 addr_vec.push_back(sn_index_i[i].read());
                 data_vec.push_back(sn_data_i[i].read());
             }
@@ -276,7 +261,6 @@ SC_MODULE(PeCore) {
         for (int i = 0; i < addr_vec.size(); ++i) {
             lm_write(addr_vec[i],data_vec[i]);
         }
-        busy_write_data = false;
     }
 
     void send_data_to_pe_cores(sc_uint<ADDR_BITS> index,float data){
