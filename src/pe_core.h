@@ -8,6 +8,7 @@ enum class ProcessingStage {
     READ_DATA_SEND_ADDR,
     COMPUTE_WAIT,
     WRITE_RESULT,
+    SEND_RESULTS,
     WAIT_DATA,
     NEW,
     CALCULATE,
@@ -81,10 +82,15 @@ SC_MODULE(PeCore) {
     }
 
     bool enable;
-    int current_group;
     // Core processing method
     int data_offset = 0;
-    int index_calc = 0;
+//    int index_calc = 0;
+    int index_send_result = 0;
+//    int next_input_count;
+//    int next_group_count;
+//    int next_group_index;
+
+    int data_result_offset = 0;
     void core_process() {
         while (true) {  // Infinite loop for the thread
             local_memory_enable.write(false);
@@ -118,6 +124,7 @@ SC_MODULE(PeCore) {
                 if (stage == ProcessingStage::START){
                     math_reset.write(true);
                     math_enable.write(false);
+                    data_result_offset = 0;
                     stage = ProcessingStage::GET_LAYER_SIZE;
                     wait();
                     continue;
@@ -143,77 +150,103 @@ SC_MODULE(PeCore) {
                     cout << "input_count1 " << input_count << endl;
                     cout << "group_count " << group_count << endl;
                     cout << "group_index " << group_index << endl;
-                    index_calc = 0;
+//                    index_calc = 0;
                     stage = ProcessingStage::CALCULATE;
                     wait();
                     continue;
                 }
                 if (stage == ProcessingStage::CALCULATE){
-                    current_group = group_index;
-                    //                    for (int i = 0; i < 1; ++i) {
-                    math_reset.write(true);
-                    math_enable.write(false);
-                    wait();
-                    math_reset.write(false);
-                    math_enable.write(true);
-
-                    int temp_size = 0;
-                    while (temp_size < (input_count*2+7)) {
-                        cout << "data_offset " << data_offset << endl;
-                        const int addr = 1+(layers_count*3)+(data_offset*2)+(index_calc*(input_count*2))+(temp_size);
-                        cout << "input_count "<< input_count << endl;
-                        cout << "temp_size "<< temp_size << endl;
-                        cout << "addr "<< addr << endl;
-                        cout << "offset_m "<< (index_calc*(input_count*2)) << endl;
-
-                        auto data_from_memory = lm_read(addr);
-                        for (int j = 0; j < data_from_memory.size(); ++j) {
-                            cout << "data_from_memory[" << addr+j << "] " << data_from_memory[j] << endl;
-                        }
-                        for (int k = 0; k < (POCKET_SIZE/2); ++k) {
-                            cout << "k " << (k * 2) + 1 << endl;
-                            if ((temp_size/2)+k < input_count) {
-                                cout << "math_inputs["<< index_core <<"]("<<(temp_size/2)+k<<"): " << data_from_memory[k * 2] << endl;
-                                cout << "math_weights["<< index_core <<"]("<<(temp_size/2)+k<<"): " << data_from_memory[(k * 2) + 1] << endl;
-                                math_inputs[k].write(data_from_memory[k * 2]);
-                                math_weights[k].write(data_from_memory[(k * 2) + 1]);
-                            }
-                            else{
-                                cout << "math_inputs["<< index_core <<"]("<<(temp_size/2)+k<<"): " << 0 << endl;
-                                cout << "math_weights["<< index_core <<"]("<<(temp_size/2)+k<<"): " << 0 << endl;
-                                math_inputs[k].write(0);
-                                math_weights[k].write(0);
-                            }
-                        }
-                        temp_size += POCKET_SIZE;
-                        cout << "POCKET_SIZE " << POCKET_SIZE << endl;
-                    }
-                    wait();
-                    for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
-                        math_inputs[k].write(0);
-                        math_weights[k].write(0);
-                    }
-                    math_enable.write(false);
-                    while (math_busy.read()) {
+                    for (int current_group = 0; current_group < group_count; ++current_group) {
+                        math_reset.write(true);
+                        math_enable.write(false);
                         wait();
-                    }
+                        math_reset.write(false);
+                        math_enable.write(true);
 
-                    cout << "test data_offset" << data_offset << endl;
-                    cout << "test (2*group_count*input_count)" << (2*group_count*input_count) << endl;
-                    cout << "test (group_index)" << (group_index) << endl;
-                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (data_offset) + (2*group_count*input_count) + (index_calc*POCKET_SIZE) + (index_core*2);
-                    cout << "test data_math " << math_output.read() << endl;
-                    cout << "test addr_math " << addr << endl;
+                        int temp_size = 0;
+                        while (temp_size < (input_count * 2 + 7)) {
+                            cout << "data_offset " << data_offset << endl;
+                            const int addr =
+                                    1 + (layers_count * 3) + (data_offset * 2) + (current_group * (input_count * 2)) +
+                                    (temp_size);
+                            cout << "input_count " << input_count << endl;
+                            cout << "temp_size " << temp_size << endl;
+                            cout << "addr " << addr << endl;
+                            cout << "offset_m " << (current_group * (input_count * 2)) << endl;
 
-                    lm_write(addr, math_output.read());
-                    cout << "Result ADDR "<< addr << endl;
-                    cout << "Result["<< index_core <<"]: " << math_output.read() << endl;
-                    send_data_to_pe_cores(addr,math_output.read());
-                    index_calc++;
-                    if (index_calc < group_count){
+                            auto data_from_memory = lm_read(addr);
+                            for (int j = 0; j < data_from_memory.size(); ++j) {
+                                cout << "data_from_memory[" << addr + j << "] " << data_from_memory[j] << endl;
+                            }
+                            for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
+                                cout << "k " << (k * 2) + 1 << endl;
+                                if ((temp_size / 2) + k < input_count) {
+                                    cout << "math_inputs[" << index_core << "](" << (temp_size / 2) + k << "): "
+                                         << data_from_memory[k * 2] << endl;
+                                    cout << "math_weights[" << index_core << "](" << (temp_size / 2) + k << "): "
+                                         << data_from_memory[(k * 2) + 1] << endl;
+                                    math_inputs[k].write(data_from_memory[k * 2]);
+                                    math_weights[k].write(data_from_memory[(k * 2) + 1]);
+                                } else {
+                                    cout << "math_inputs[" << index_core << "](" << (temp_size / 2) + k << "): " << 0
+                                         << endl;
+                                    cout << "math_weights[" << index_core << "](" << (temp_size / 2) + k << "): " << 0
+                                         << endl;
+                                    math_inputs[k].write(0);
+                                    math_weights[k].write(0);
+                                }
+                            }
+                            temp_size += POCKET_SIZE;
+                            cout << "POCKET_SIZE " << POCKET_SIZE << endl;
+                        }
                         wait();
+                        for (int k = 0; k < (POCKET_SIZE / 2); ++k) {
+                            math_inputs[k].write(0);
+                            math_weights[k].write(0);
+                        }
+                        math_enable.write(false);
+                        while (math_busy.read()) {
+                            wait();
+                        }
+
+                        data_result_offset = data_result_offset + input_count;
+                        cout << "test data_result_offset " << data_result_offset << endl;
+                        int result_neuron_index = index_core+(current_group*PE_CORES);
+                        cout << "Result[" << result_neuron_index << "]: " << math_output.read() << endl;
+
+                        sendResults(result_neuron_index, math_output.read());
+
+                        index_send_result = 0;
+//                        auto results = lm_read(1 + ((current_layers + 1) * 3));
+//                        next_input_count = results[0];
+//                        next_group_count = results[1];
+//                        next_group_index = results[2];
+                    }
+                    if (current_layers < 1) {
+                        current_layers++;
+                        stage = ProcessingStage::READ_DATA_SEND_ADDR;
                         continue;
                     }
+                    stage = ProcessingStage::IDLE;
+                    cout << "IDLE" << endl;
+                }
+                if (stage == ProcessingStage::SEND_RESULTS) {
+//                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (data_offset) + (2*group_count*input_count) + (next_input_count*index_send_result*2) + (index_core*2);
+//
+//                    lm_write(addr, math_output.read());
+//                    send_data_to_pe_cores(addr,math_output.read());
+//                    index_send_result++;
+//                    if (index_send_result < next_input_count) {
+//                        stage = ProcessingStage::SEND_RESULTS;
+//                        wait();
+//                        continue;
+//                    }
+
+//                    if (index_calc < group_count){
+//                        index_calc++;
+//                        wait();
+//                        stage = ProcessingStage::CALCULATE;
+//                    }
 
                     data_offset += group_count*input_count;
                     stage = ProcessingStage::WAIT_DATA;
@@ -221,19 +254,11 @@ SC_MODULE(PeCore) {
                     continue;
                 }
                 if (stage == ProcessingStage::WAIT_DATA){
-                    bool is_wait = false;
-                    for (const auto & j : sn_wr_i) {
-                        if (j.read()){
-                            is_wait = true;
-                        }
-                    }
-                    if (busy_write_data || is_wait || sn_wr){
-                        wait();
-                        continue;
-                    }
+
+
                     cout << "go next" << endl;
-                    current_layers++;
-                    if (current_layers >= layers_count) {
+//                    if (current_layers >= layers_count) {
+                    if (current_layers >= 2) {
                         stage = ProcessingStage::IDLE;
                     }
                     else{
@@ -250,6 +275,41 @@ SC_MODULE(PeCore) {
             }
             wait();  // Pause and wait for next trigger
         }
+    }
+
+    void sendResults(int result_index, float data){
+        auto results = lm_read(1 + ((current_layers + 1) * 3));
+        int next_input_count = results[0];
+        int next_group_count = results[1];
+        int next_group_index = results[2];
+
+        cout << "next_group_count " << next_group_count << endl;
+        for (int next_group_i = 0; next_group_i < next_group_count; ++next_group_i) {
+            sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (data_offset*2) + (group_count*input_count*2) + (next_group_i*next_input_count*2) + (result_index*2);
+            cout << "sendResults addr " << addr << endl;
+            send_data_to_pe_cores(addr, data);
+            read_data_to_pe_cores();
+        }
+    }
+
+    void waitTransfer(){
+        bool is_wait;
+        do {
+            read_data_to_pe_cores();
+
+            is_wait = false;
+            for (const auto &j: sn_wr_i) {
+                if (j.read()) {
+                    is_wait = true;
+                }
+            }
+            if (busy_write_data || sn_wr) {
+                is_wait = true;
+            }
+            if (is_wait) {
+                wait();
+            }
+        } while (is_wait);
     }
 
     bool busy_write_data;
@@ -273,6 +333,7 @@ SC_MODULE(PeCore) {
     }
 
     void send_data_to_pe_cores(sc_uint<ADDR_BITS> index,float data){
+        lm_write(index, data);
         sn_wr.write(true);
         sn_index.write(index);
         sn_data.write(data);
