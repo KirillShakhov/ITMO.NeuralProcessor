@@ -6,7 +6,9 @@ enum class ControlUnitStage {
     SEND_INPUTS,
     SEND_WEIGHTS,
     START_CORES,
-    WAIT_RESULTS,
+    WAIT_COMPUTES,
+    GET_RESULTS,
+    PRINT_RESULTS,
     IDLE
 };
 
@@ -56,16 +58,12 @@ SC_MODULE(ControlUnit) {
                 continue;
             }
             if (stage == ControlUnitStage::SEND_WEIGHTS) {
-
-
-                int current_core = 0;
                 cout << "get_layer_size() " << get_layer_size() << endl;
                 for (int layer_index = 0; layer_index < get_layer_size(); ++layer_index) {
                     cout << "wright_count " << get_layer_weight_count(layer_index) << endl;
                     int weights_per_count = get_layer_weight_count(layer_index) / PE_CORE;
                     cout << "weights_per_count " << weights_per_count << endl;
                     cout << "groups " << weights_layers[layer_index] << endl;
-
                 }
 
                 std::vector<int> offsetCores(PE_CORE, 0); // Создаем вектор offset для каждого coreIndex
@@ -165,17 +163,36 @@ SC_MODULE(ControlUnit) {
             }
             if (stage == ControlUnitStage::START_CORES) {
                 write(0xFFF, 1);
-                bus_addr.write(111);
-                bus_wr.write(false);
-                bus_rd.write(false);
-                stage = ControlUnitStage::WAIT_RESULTS;
+                stage = ControlUnitStage::WAIT_COMPUTES;
                 wait();
                 continue;
             }
-            if (stage == ControlUnitStage::WAIT_RESULTS) {
-                float is_free = read(0x2011);
-                cout << "is_free " << is_free << endl;
-                stage = ControlUnitStage::WAIT_RESULTS;
+            if (stage == ControlUnitStage::WAIT_COMPUTES) {
+                int is_free = read(0x1FF);
+                if (is_free == 0x100){
+                    stage = ControlUnitStage::GET_RESULTS;
+                }
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::GET_RESULTS) {
+                int last_layer_size = weights_layers[weight_size-1];
+                for (int i = 0; i < last_layer_size; ++i) {
+                    auto addr = 0x1F00+i;
+                    float result = lm_read(addr);
+                    write(0x8000+result_addr+i, result);
+                }
+                stage = ControlUnitStage::PRINT_RESULTS;
+                wait();
+                continue;
+            }
+            if (stage == ControlUnitStage::PRINT_RESULTS) {
+                int last_layer_size = weights_layers[weight_size-1];
+                for (int i = 0; i < last_layer_size; ++i) {
+                    float result = read(0x8000+result_addr+i);
+                    cout << "Out[" << i << "] = " << result << endl;
+                }
+                stage = ControlUnitStage::IDLE;
                 wait();
                 continue;
             }
@@ -212,14 +229,22 @@ SC_MODULE(ControlUnit) {
         return weights_layers[layer_index - 1] * weights_layers[layer_index];
     }
 
-    int get_group_count(int layer_index) {
-        return weights_layers[layer_index];
-    }
-
     float read(sc_uint<ADDR_BITS> addr) {
         bus_addr.write(addr);
         bus_rd.write(true);
         bus_wr.write(false);
+        wait();
+        wait();
+        bus_rd.write(false);
+        return bus_data_out.read();
+    }
+
+    float lm_read(sc_uint<ADDR_BITS> addr) {
+        bus_addr.write(addr);
+        bus_rd.write(true);
+        bus_wr.write(false);
+        wait();
+        wait();
         wait();
         wait();
         bus_rd.write(false);
