@@ -84,13 +84,6 @@ SC_MODULE(PeCore) {
     bool enable;
     // Core processing method
     int data_offset = 0;
-//    int index_calc = 0;
-    int index_send_result = 0;
-//    int next_input_count;
-//    int next_group_count;
-//    int next_group_index;
-
-    int data_result_offset = 0;
     void core_process() {
         while (true) {  // Infinite loop for the thread
             local_memory_enable.write(false);
@@ -124,7 +117,6 @@ SC_MODULE(PeCore) {
                 if (stage == ProcessingStage::START){
                     math_reset.write(true);
                     math_enable.write(false);
-                    data_result_offset = 0;
                     stage = ProcessingStage::GET_LAYER_SIZE;
                     wait();
                     continue;
@@ -209,64 +201,20 @@ SC_MODULE(PeCore) {
                             wait();
                         }
 
-                        data_result_offset = data_result_offset + input_count;
-                        cout << "test data_result_offset " << data_result_offset << endl;
                         int result_neuron_index = index_core+(current_group*PE_CORES);
                         cout << "Result[" << result_neuron_index << "]: " << math_output.read() << endl;
-
                         sendResults(result_neuron_index, math_output.read());
-
-                        index_send_result = 0;
-//                        auto results = lm_read(1 + ((current_layers + 1) * 3));
-//                        next_input_count = results[0];
-//                        next_group_count = results[1];
-//                        next_group_index = results[2];
                     }
-                    if (current_layers < 1) {
-                        current_layers++;
+                    // go next
+                    data_offset += group_count*input_count;
+                    current_layers++;
+                    // check
+                    if (current_layers < layers_count) {
                         stage = ProcessingStage::READ_DATA_SEND_ADDR;
                         continue;
                     }
                     stage = ProcessingStage::IDLE;
                     cout << "IDLE" << endl;
-                }
-                if (stage == ProcessingStage::SEND_RESULTS) {
-//                    sc_uint<ADDR_BITS> addr = 1+(layers_count*3) + (data_offset) + (2*group_count*input_count) + (next_input_count*index_send_result*2) + (index_core*2);
-//
-//                    lm_write(addr, math_output.read());
-//                    send_data_to_pe_cores(addr,math_output.read());
-//                    index_send_result++;
-//                    if (index_send_result < next_input_count) {
-//                        stage = ProcessingStage::SEND_RESULTS;
-//                        wait();
-//                        continue;
-//                    }
-
-//                    if (index_calc < group_count){
-//                        index_calc++;
-//                        wait();
-//                        stage = ProcessingStage::CALCULATE;
-//                    }
-
-                    data_offset += group_count*input_count;
-                    stage = ProcessingStage::WAIT_DATA;
-                    wait();
-                    continue;
-                }
-                if (stage == ProcessingStage::WAIT_DATA){
-
-
-                    cout << "go next" << endl;
-//                    if (current_layers >= layers_count) {
-                    if (current_layers >= 2) {
-                        stage = ProcessingStage::IDLE;
-                    }
-                    else{
-                        stage = ProcessingStage::READ_DATA_SEND_ADDR;
-//                        stage = ProcessingStage::IDLE;
-                    }
-                    wait();
-                    continue;
                 }
                 if (stage == ProcessingStage::IDLE){
                     wait();
@@ -281,7 +229,6 @@ SC_MODULE(PeCore) {
         auto results = lm_read(1 + ((current_layers + 1) * 3));
         int next_input_count = results[0];
         int next_group_count = results[1];
-        int next_group_index = results[2];
 
         cout << "next_group_count " << next_group_count << endl;
         for (int next_group_i = 0; next_group_i < next_group_count; ++next_group_i) {
@@ -292,25 +239,25 @@ SC_MODULE(PeCore) {
         }
     }
 
-    void waitTransfer(){
-        bool is_wait;
-        do {
-            read_data_to_pe_cores();
-
-            is_wait = false;
-            for (const auto &j: sn_wr_i) {
-                if (j.read()) {
-                    is_wait = true;
-                }
-            }
-            if (busy_write_data || sn_wr) {
-                is_wait = true;
-            }
-            if (is_wait) {
-                wait();
-            }
-        } while (is_wait);
-    }
+//    void waitTransfer(){
+//        bool is_wait;
+//        do {
+//            read_data_to_pe_cores();
+//
+//            is_wait = false;
+//            for (const auto &j: sn_wr_i) {
+//                if (j.read()) {
+//                    is_wait = true;
+//                }
+//            }
+//            if (busy_write_data || sn_wr) {
+//                is_wait = true;
+//            }
+//            if (is_wait) {
+//                wait();
+//            }
+//        } while (is_wait);
+//    }
 
     bool busy_write_data;
     void read_data_to_pe_cores(){
