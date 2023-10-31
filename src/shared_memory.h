@@ -1,6 +1,6 @@
 #include <systemc.h>
 
-template<int ADDR_BITS, int DATA_BITS, int OFFSET>
+template<int ADDR_BITS, int OFFSET>
 SC_MODULE(SharedMemory) {
     sc_in_clk clk_i;
     sc_in<bool> bus_rd;

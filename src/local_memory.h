@@ -1,6 +1,6 @@
 #include "systemc.h"
 
-template<int ADDR_BITS, int DATA_BITS, int POCKET_SIZE>
+template<int ADDR_BITS, int POCKET_SIZE>
 SC_MODULE(LocalMemory) {
     sc_in<bool> clk;
     sc_in<bool> enable;
@@ -17,12 +17,8 @@ SC_MODULE(LocalMemory) {
     void proc(){
         if (!enable) return;
         if (rd) {
-            cout << "////////////////////////////" << endl;
-            for (int i = 400; i < 402+64; ++i) {
-                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-            }
 //            cout << "////////////////////////////" << endl;
-//            for (int i = 466; i < 466+32; ++i) {
+//            for (int i = 400; i < 402+64; ++i) {
 //                cout << "local_memory[" << i << "] = " << mem[i] << endl;
 //            }
             for (int i = 0; i < POCKET_SIZE; ++i) {
@@ -34,14 +30,6 @@ SC_MODULE(LocalMemory) {
 //            for (int i = 400; i < 402+64; ++i) {
 //                cout << "local_memory[" << i << "] = " << mem[i] << endl;
 //            }
-//            cout << "////////////////////////////" << endl;
-//            for (int i = 466; i < 466+32; ++i) {
-//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-//            }
-//            for (int i = 0; i < 50; ++i) {
-//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
-//            }
-//            cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
             if (single_channel){
                 mem[address.read()] = data_in[0].read();
                 return;
@@ -52,12 +40,8 @@ SC_MODULE(LocalMemory) {
         }
     }
 
-    // Конструктор модуля
     SC_CTOR(LocalMemory) {
         SC_METHOD(proc)
-//        for (int i = 0; i < (2^ADDR_BITS); ++i) {
-//            mem[i] = 0;
-//        }
         sensitive << clk;
     }
 };
