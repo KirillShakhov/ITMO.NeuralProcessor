@@ -4,7 +4,7 @@
 #include "multiplier_array.h"
 #include "sigmoid.h"
 
-template<int N_PORTS>
+template <int N_PORTS>
 SC_MODULE(NeuralMath) {
     sc_in_clk clock;
     sc_in<bool> reset;
@@ -30,19 +30,31 @@ SC_MODULE(NeuralMath) {
 
     sc_uint<2> count;
 
+    void reset_module() {
+        output.write(0);
+        for (int i = 0; i < N_PORTS; ++i) {
+            multiplierArrayInput1[i].write(0);
+            multiplierArrayInput2[i].write(0);
+        }
+        busy.write(false);
+    }
+
+    void process_data() {
+        output.write(0);
+        for (int i = 0; i < N_PORTS; ++i) {
+            multiplierArrayInput1[i].write(inputs[i].read());
+            multiplierArrayInput2[i].write(weights[i].read());
+        }
+        busy.write(true);
+        count = 3;
+    }
+
     void update_output() {
-        if (reset.read()) {  // Асинхронный сброс
-            output.write(0);
-            busy.write(false);
-        } else if (clock.posedge()) { // Если положительный фронт
-            if (enable){
-                busy.write(true);
-                count = 2;
-                output.write(0);
-                for (int i = 0; i < N_PORTS; ++i) {
-                    multiplierArrayInput1[i].write(inputs[i].read());
-                    multiplierArrayInput2[i].write(weights[i].read());
-                }
+        if (reset.read()) {  // Asynchronous reset
+            reset_module();
+        } else if (clock.posedge()) { // Positive clock edge
+            if (enable) {
+                process_data();
                 return;
             }
             for (int i = 0; i < N_PORTS; ++i) {
@@ -81,6 +93,6 @@ SC_MODULE(NeuralMath) {
             sensitive << inputs[i];
         }
         sensitive << reset;
-        sensitive << clock.pos();  // Реагируем только на положительный фронт тактового сигнала
+        sensitive << clock.pos();
     }
 };

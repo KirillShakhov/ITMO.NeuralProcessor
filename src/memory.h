@@ -15,12 +15,7 @@ SC_MODULE(Memory) {
 
     void proc(){
         if (!enable.read()) return;
-        if (rd.read() != 0) {
-            data_out.write(mem[address.read()]);
-        }
-        if (wr.read() != 0) {
-            mem[address.read()] = data_in.read();
-        }
+
     }
 
     // Конструктор модуля

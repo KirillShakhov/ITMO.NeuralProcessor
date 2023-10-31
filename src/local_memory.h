@@ -6,21 +6,46 @@ SC_MODULE(LocalMemory) {
     sc_in<bool> enable;
     sc_in<bool> wr;
     sc_in<bool> rd;
+    sc_in<bool> single_channel;
     sc_in<sc_uint<ADDR_BITS>> address;
-    sc_vector<sc_in<sc_uint<DATA_BITS>>> data_in{"data_in", POCKET_SIZE};
-    sc_vector<sc_out<sc_uint<DATA_BITS>>> data_out{"data_out", POCKET_SIZE};
+    sc_vector<sc_in<float>> data_in{"data_in", POCKET_SIZE};
+    sc_vector<sc_out<float>> data_out{"data_out", POCKET_SIZE};
 
     // Локальная память
-    sc_uint<DATA_BITS> mem[(1 << ADDR_BITS)];
+    float mem[(1 << ADDR_BITS)];
 
     void proc(){
-        if (!enable.read()) return;
-        if (rd.read()) {
+        if (!enable) return;
+        if (rd) {
+            cout << "////////////////////////////" << endl;
+            for (int i = 400; i < 402+64; ++i) {
+                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+            }
+//            cout << "////////////////////////////" << endl;
+//            for (int i = 466; i < 466+32; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 data_out[i].write(mem[address.read()+i]);
             }
         }
-        if (wr.read()) {
+        if (wr) {
+//            cout << "////////////////////////////" << endl;
+//            for (int i = 400; i < 402+64; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
+//            cout << "////////////////////////////" << endl;
+//            for (int i = 466; i < 466+32; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
+//            for (int i = 0; i < 50; ++i) {
+//                cout << "local_memory[" << i << "] = " << mem[i] << endl;
+//            }
+//            cout << "Local Memory Write Addr: " << address.read() << " Data: " << data_in[0].read() << endl;
+            if (single_channel){
+                mem[address.read()] = data_in[0].read();
+                return;
+            }
             for (int i = 0; i < POCKET_SIZE; ++i) {
                 mem[address.read()+i] = data_in[i].read();
             }
@@ -33,6 +58,6 @@ SC_MODULE(LocalMemory) {
 //        for (int i = 0; i < (2^ADDR_BITS); ++i) {
 //            mem[i] = 0;
 //        }
-        sensitive << clk.pos(); // Процесс срабатывает на положительный фронт сигнала тактирования
+        sensitive << clk;
     }
 };
